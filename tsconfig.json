@@ -1,0 +1,33 @@
+{
+    "compileOnSave": false,
+    "compilerOptions": {
+        "baseUrl": "./",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "importHelpers": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "strictBindCallApply": true,
+        "strictFunctionTypes": true,
+        "alwaysStrict": true,
+        "outDir": "dist",
+        "declaration": true,
+        "target": "es2018",
+        "sourceMap": true,
+        "removeComments": true,
+        "typeRoots": [
+            "node_modules/@types"
+        ],
+        "types": [
+            "node",
+            "reflect-metadata"
+        ]
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
