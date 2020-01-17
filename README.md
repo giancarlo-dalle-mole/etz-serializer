@@ -1,9 +1,9 @@
 # Enterprize Serializer (etz-serializer)
 Custom classes and native TypeScript/JavaScript classes serialization and deserialization with metadata into JSON compliant standard.
 
-## :warning: IN PROGRESSS, DO NOT USE YET! :warning:
+# :warning: IN PROGRESSS, DO NOT USE YET! :warning:
 
-## Features
+# Features
  
 - Serialization of primitives and wrappers;
 - Serialization of JavaScript built-ins types: Array, Date, Map and Set;
@@ -18,11 +18,9 @@ Custom classes and native TypeScript/JavaScript classes serialization and deseri
 - Custom types transformers, allowing almost anything to be serialized;
 - Namespaces and custom names;
 - IoC Container aware;
-- Minification friendly.\**
+- Minification friendly.\*
 
-<sub><sup>
 \*Minification friendly requires special treatment. More on this on section [**Usage: Minification**](#minification).
-</sup></sub>
 
 ## Unsupported features
 
@@ -30,19 +28,19 @@ The following features are not supported, but may be added in the future. If you
 
 - Generics - Since TypeScript uses the concept of [Type Erasure](https://en.wikipedia.org/wiki/Type_erasure), its very hard to come up with some architecture and API that does not involve too much manual definitions or JSON pollution;
 
-## Requirements
+# Requirements
 
 * ES6+ JavaScript VM; 
 
-## Usage
+# Usage
 
-## Architecture 
+# Architecture 
 
 This section describes the internal rules and design decisions used in this library.
 
 > Notice: The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT** and **MAY** are to be interpreted as described in [RFC 2119](https://tools.ietf.org/html/rfc2119).  
 
-#### Commandments
+## Commandments
 
 * MUST use Open/Closed principle of SOLID;
 * MUST be friendly to IoC containers, such as [Inversify](https://github.com/inversify/InversifyJS);
@@ -50,7 +48,7 @@ This section describes the internal rules and design decisions used in this libr
 * SHOULD respect JSON standards, unless explicitly said otherwise; 
 * SHOULD have minimal performance impact on applications.
 
-#### General JSON Serializations
+## General JSON Serializations
 
 * ``Date`` objects are serialized as ISO strings. (JavaScript ``JSON`` default);
 * ``NaN`` values are serialized as ``"NaN"`` string. (JavaScript ``JSON`` uses ``null``);
@@ -58,35 +56,35 @@ This section describes the internal rules and design decisions used in this libr
 * ``Map`` objects are serialized as tuples <K,V> (eg.: ``[[1, "A"], [2, "B"], [3, {prop: "bar"}]]``). (JavaScript ``JSON`` does not serialize ``Map`` objects, resulting in empty objects - ``{}``);
 * ``Set`` objects are serialized as arrays ``[key, value]`` (e.g.: ``[[1, "A"], [2, "B"], [3, {prop: "bar"}]]``). (JavaScript ``JSON`` does not serialize ``Map`` objects, resulting in empty objects - ``{}``);
 
-#### Other rules
+## Other Rules
 
-* All types/classes not decorated with ``@Serializable`` MUST use a ``Transformer`` to perform serialization;
+* All types/classes not decorated with [``@Serializable``](#serializable) MUST use a [``@Transformer``](#transformert--any-s--any) to perform serialization;
 * Global and per operation behavior configuration;
-* To enforce wrappers, you MUST use the enum ``TypesEnum.WRAPPER`` in the ``type`` parameter of ``@Serializable``;
+* To enforce wrappers, you MUST use the enum [``TypesEnum.WRAPPER``](#typesenum) in the ``type`` parameter of [``@Serializable``](#serializable);
 * Possibility to serialize without creating any metadata;
-* Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the ``fromJson`` method;
-* If a wrapper is used (Number, Boolean, String), but it was not enforced by ``TypesEnum.WRAPPER`` enum, then value MUST be serialized/deserialized as a primitive;
+* Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the [``Serializer#deserializer``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) or [``Serializer#fromJson``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) method;
+* If a wrapper is used (Number, Boolean, String), but it was not enforced by [``TypesEnum.WRAPPER``](#typesenum) enum, then value MUST be serialized/deserialized as a primitive;
 
-## Public API
+# Public API
 
-### Enums
+## Enums
 
-#### ``TypesEnum``
+### ``TypesEnum``
 
-Used to define a type to a ``@Serialize`` attribute that cannot be expressed naturally in runtime, such as ``any`` type and wrapper enforcement. 
+Used to define a type to a [``@Serialize``](#serializee--void) attribute that cannot be expressed naturally in runtime, such as ``any`` type and wrapper enforcement. 
 
-Known usages: ``@Serialize``
+Known usages: [``@Serialize``](#serializee--void)
 
 |Value|Description|
 |---|---|
 |``ANY``|Accepts any type. Use when you do not want to type check.|
 |``WRAPPER``|The type is a wrapper instead of the primitive. Use to define wrapper types.|
 
-#### ``BehaviorEnum``
+### ``BehaviorEnum``
 
 Used to customize behavior on some operations that MAY have different behaviors under certain circumstances or by programmer design choice.  
 
-Known usages: ``ISerilizer``, ``SerializerConfig``
+Known usages: [``SerializerConfig``](#serializer)
 
 |Value|Description|
 |---|---|
@@ -98,18 +96,18 @@ Known usages: ``ISerilizer``, ``SerializerConfig``
 
 Used to customize object instantiation policy.
 
-Known usages: ``@Transformer`` ``SerializerConfig``
+Known usages: [``@Transformer``](#transformert--any-s--any) [``SerializerConfig``](#serializer)
 
 |Value|Description|
 |---|---|
-|SINGLETON|Instantiate only once and then cache.|
-|TRANSIENT|Gets a new instance every time the object is required.|
+|``SINGLETON``|Instantiate only once and then cache.|
+|``TRANSIENT``|Gets a new instance every time the object is required.|
 
-### Decorators
+## Decorators
 
-#### ``@Serializable``
+### ``@Serializable``
 
-Marks a class as a serializable type, registering it on the ``SerializerRegistry`` as a serializable type. Only non abstract classes can be marked as serializable.
+Marks a class as a serializable type, registering it on the [``SerializerRegistry``](#serializerregistry) as a serializable type. Only non abstract classes can be marked as serializable.
 
 Signatures:
 
@@ -126,7 +124,7 @@ Signatures:
 |``namespace``|``string``|***(optional)*** Namespace of the type. MAY be used to group related types. **Default:** ``""`` (empty string, global namespace)|
 |``version``|``number``|***(optional)*** Define the current version of the type (integer). MAY be used as a version control to prevent bugs of incompatible versions (i.e. client version <> server version). **Default:** ``1``|
 
-#### ``@Serialize<E = void>``
+### ``@Serialize<E = void>``
 
 Marks a field for serialization. When marking custom types (i.e. programmer defined classes) be aware of the TDZ HELL (*temporal dead zone*) with cyclic dependencies (see TypeScript issue [#14971](https://github.com/microsoft/TypeScript/issues/14971)), in which case the programmer MUST set the ``type`` parameter (errors MAY be thrown if not set), otherwise its optional.
 
@@ -150,11 +148,11 @@ Signatures:
 |``groups``|``Array<string>``|***(optional)*** A list of serialization groups to include the attribute during serialization/deserialization.|
 |``extra``|``E``|***(optional)*** Some extra data to be passed to the ``Transformer`` during serialization/deserialization. An example of usage is for ``Array`` on the ``ArrayTransformer`` (``ArrayExtra``).
 
-#### ``@Transformer<T = any, S = any>``
+### ``@Transformer<T = any, S = any>``
 
-Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the ``SerializerRegistry``. This decorator provides a declarative way to define a transformer instead of the direct use of ``SerializerRegistry#addTransformer`` method. The class MUST implement the ``ITransformer<T, S>`` interface.
+Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert-sclazz-classstring-transformer-itransformerstatict-s-void) method. The class MUST implement the ``ITransformer<T, S>`` interface.
 
-The default behavior is to instantiate only once and cache the object for the rest of the application lifecycle. This can be changed by setting the parameter ``instatiationBehavior``.
+The default behavior is to instantiate only once and cache the object for the rest of the application lifecycle. This can be changed by setting the parameter ``TransformerOptions.instatiationBehavior``.
 
 Generic Types:
 
@@ -175,27 +173,61 @@ Signatures:
 |---|:---:|---|
 |``instantiationPolicy``|``InstantiationPolicyEnum``|***(optional)*** The specific policy of this transformer instantiation. Overrides global policy in ``SerializerConfig``. When using IoC containers with the adapter, this argument is passed to the ``IIoCContainerAdapter#bind`` method.  **Default:** ``InstantiationPolicyEnum.SINGLETON``.
 
-### Interfaces
+## Interfaces
 
-#### ``ISerializer``
+### ``ISerializable``
 
-Basic interface that describes an serialization/deserialization service. Can be implemented to provide custom serialization/deserialization services.
+Describes method signatures to customize an object serialization/deserialization process for classes marked with [``@Serializable``](#serializable) decorator. When a class implements this interface and the default [``Serializer``](#serializer) is used, the methods ``writeJson`` and ``readJson``  will be called during serialization and deserialization with the object resulted from the default strategy in [``Serializer#writeJson``](#-protected-writejsontinstance-t-jsont) and [``Serializer#readJson``](#-protected-readjsontjson-jsont-t).
 
-You SHOULD extend the ``Serializer`` class instead of rewriting the entire logic. 
+|Methods Summary|Description|
+|---|---|
+|[``public readJson<T>(default: T, json: Json<T>): T``](#-public-readjsontdefault-t-json-jsont-t)|Customize the deserialization operation. |
+|[``public writeJson<T>(default: Json<T>, instance: T): Json<T>``](#-public-writejsontdefault-jsont-instance-t-jsont)|Customize the serialization operation.|
 
-Known usages: ``Serializer``
+#### # ``public readJson<T>(default: T, json: Json<T>): T``
 
-|Method|Signature|Summary|
-|---|:---:|---|
-|||
+#### # ``public writeJson<T>(default: Json<T>, instance: T): Json<T>``
 
-#### ``ISerializable``
+## Types
 
-Describes method signatures to customize an object serialization/deserialization process for classes marked with [``@Serializable``](#serializable) decorator. When a class implements this interface and the default ``Serializer`` is used, the methods ``writeJson`` and ``readJson``  will be called during serialization and deserialization with the object resulted from the default strategy in ``Serializer#writeJson`` and ``Serializer#readJson``.
+### ``Class<T extends Object = Object>``
 
-#### Classes
+Type alias for a class definition.
+
+Generic types:
+
+- ``T``: The type (class) being represented.
+
+### ``Json<T extends Object>``
+
+Type alias for a json version of a given class. Only attributes are keep, functions are excluded.
+
+Generic types:
+
+- ``T``: The type (class) of the object this JSON structure represents. 
+
+## Classes
 
 ### ``Serializer``
+
+The service that performs serialization and deserialization process. Can be configured globally or per operation to change the serialization and deserialization behaviors, such as including or not ``typeMetadata`` and performing other operations.
+
+|Methods Summary|Description|
+|---|---|
+|[``public getConfig(): SerializerConfig``](#-public-getconfig-serializerconfig)|Retrieves the global configuration of the serializer service.|
+|[``public setConfig(config: SerializationConfig): void``](#-public-setconfigconfig-serializationconfig-void)|Sets the global configuration of the serializer service.|
+|[``public clone<T extends Object>(instance: T): T``](#-public-clonet-extends-objectinstance-t-t)|Performs a deep clone of the object.|
+|[``public serialize<T extends Object>(instance: T Array<T>, options?: SerializationOptions): string``](#-public-serializet-extends-objectinstance-tarrayt-options-serializationoptions-string)|Serializes an object or an array of objects into a ``JSON`` ``string``.|
+|[``public deserialize<T extends Object>(json: string, options?: DeserializationOptions): T``](#-public-deserializet-extends-objectjson-string-options-deserializationoptions-t)|Deserializes a an ``JSON`` ``string`` into ``T``.|
+|[``public deserialize<T extends Object>(json: string, clazz: Class<T> options?: DeserializationOptions): T``](#-public-deserializet-extends-objectjson-string-options-deserializationoptions-t)|Deserializes a an ``JSON`` ``string`` into ``T`` by using ``clazzz`` as root type or type checking.|
+|[``public toJson<T extends Object>(instance: T, options?: SerializationOptions): Json<T>``](#-public-tojsont-extends-objectinstance-t-options-serializationoptions-jsont)|Converts a given instance of a class to its "JSON object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.|
+|[``public toJson<T extends Object>(instances: Array<T>, options?: SerializationOptions): Array<Json<T>>``](#-public-tojsont-extends-objectinstances-arrayt-options-serializationoptions-arrayjsont)|Converts a given array of instances of a class to its "json object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.|
+|[``public fromJson<T extends Object>(json: Json<T>, options?: DeserializationOptions): T``](#-public-fromjsont-extends-objectjson-jsont-options-deserializationoptions-t)|Restores a given json object to its original instance of class, if possible. For the restoration process to work for some given classes, some metadata must be set.|
+|[``public fromJson<T extends Object>(json: Array<Json<T>>, options?: DeserializationOptions): Array<T>``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t)|Restores a given array of json objects to its original instance of class, if possible. For the restoration process to work for some given classes, some metadata must be set.|
+|[``public fromJson<T extends Object>(json: Json<T>, clazz: Class<T>, options?: DeserializationOptions): T``](#-public-fromjsont-extends-objectjson-arrayjsont-options-deserializationoptions-arrayt)|Restores a given json object to its original instance of class, if possible, using a specific class to validate or as the type of the root object. For the restoration process to work for some given classes, some metadata must be set.|
+|[``public fromJson<T extends Object>(json: Array<Json<T>>, clazz: Class<T>, options?: DeserializationOptions): Array<T>``](#-public-fromjsont-extends-objectjson-arrayjsont-clazz-classt-options-deserializationoptions-arrayt)|Restores a given array of json objects to its original instance of class, if possible, using a specific class to validate or as the type of the root object. For the restoration process to work for some given classes, some metadata must be set.|
+|[``protected readJson<T>(json: Json<T>): T``](#-protected-readjsontjson-jsont-t)|***protected*** Default deserialization strategy for ``@Serializable`` classes. Classes that implements ``ISerializable`` will receive the result of this method and can customize the operation per class. Override this method to customize the default deserialization process.|
+|[``protected writeJson<T>(instance: T): Json<T>``](#-protected-writejsontinstance-t-jsont)|***protected*** Default serialization strategy for ``@Serializable`` classes. Classes that implements ``ISerializable`` will receive the result of this method and can customize the operation per class. Override this method to customize the default serialization process.|
 
 |``SerializerConfig``<br><sub><sup>(Type)</sup></sub>|Type|Description|
 |---|:---:|---|
@@ -203,12 +235,118 @@ Describes method signatures to customize an object serialization/deserialization
 |``objectMetadata``|``boolean``|***(optional)*** Flag to includes object metadata defined with ``Reflect.defineMetadata`` or  ``@Reflect.metadata`` **Default:** ``true``|
 |``typeCheck``|``boolean``|***(optional)*** Flag to enable type checking upon deserialization (requires ``expectedType`` to validate root object). If a type is a subtype of the type being checked against, it will pass validation, otherwise it will throw ``TypeMismatchException``. **Default:** ``true``|
 |``versionMismatchBehavior``|``BehaviorEnum``|***(optional)*** Configure the behavior of class version check upon deserialization. If configured to ``BehaviorEnum.ERROR``, will throw ``VersionMismatchException``. **Default:** ``BehaviorEnum.ERROR``
-||
+
+|``SerializationOptions``<br><sub><sup>(Type)</sup></sub>|Type|Description|
+|---|:---:|---|
+|``typeMetadata``|``boolean``|***(optional)*** Overrides global configuration ``SerializerConfig.typeMetadata``|
+|``objectMetadata``|``boolean``|***(optional)*** Overrides global configuration ``SerializerConfig.objectMetadata``|
+|``groups``|``Array<string>``|***(optional)*** Groups to include in serialization process. By default if no group is passed, all attributes will be serialized. If a group is set, only non grouped attributes and attributes that belongs to any of the specified group will be serialized. You may exclude the ungrouped attributes by setting the flag ``excludeUngrouped``.|
+|``excludeUngrouped``|``boolean``|***(optional)*** Flag to exclude ungrouped attributes, keeping only attributes that belongs to any of the defined ``groups``. **Default:** ``false``
+
+|``DeserializationOptions``<br><sub><sup>(Type)</sup></sub>|Type|Description|
+|---|:---:|---|
+|``typeCheck``|``boolean``|***(optional)*** Overrides global configuration ``SerializerConfig.typeCheck``|
+|``groups``|``Array<string>``|***(optional)*** Groups to include in deserialization process. By default if no group is passed, all attributes will be deserialized. If a group is set, only non grouped attributes and attributes that belongs to any of the specified group will be deserialized. You may exclude the ungrouped attributes by setting the flag ``excludeUngrouped``.|
+|``excludeUngrouped``|``boolean``|***(optional)*** Flag to exclude ungrouped attributes, keeping only attributes that belongs to any of the defined ``groups``. **Default:** ``false``
+
+#### Methods details
+
+##### # ``public getConfig(): SerializerConfig``
+
+##### # ``public setConfig(config: SerializationConfig): void``
+
+##### # ``public clone<T extends Object>(instance: T): T``
+
+##### # ``public serialize<T extends Object>(instance: T|Array<T>, options?: SerializationOptions): string``
+
+##### # ``public deserialize<T extends Object>(json: string, options?: DeserializationOptions): T``
+
+##### # ``public deserialize<T extends Object>(json: string, clazz: Class<T> options?: DeserializationOptions): T``
+
+##### # ``public toJson<T extends Object>(instance: T, options?: SerializationOptions): Json<T>;``
+
+Converts a given instance of a class to its "JSON object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.
+
+Generic types:
+- ``T``: ***(optional)*** The object type (class) to be transformed into ``Json<T>``. **Default:** inferred.
+
+
+|Parameters|Type|Description|
+|---|:---:|---|
+|``instance``|``T``|The object to be converted into ``Json<T>``.|
+|``options``|``SerializerOptions``|***(optional)*** Configure how the operation should be done. **Default:** Uses the global configuration.|
+
+|Throws|Description|
+|:---:|---|
+|``ArrayDimensionsOutOfRangeException``||
+|``IheritanceNonSerializableException``||
+|``NonSerializableException``||
+|``TypeMismatchException``||
+|``VersionMismatchException``||
+
+|Returns|
+|---|
+|The instance converted to "JSON object" (plain object)|
+
+##### # ``public toJson<T extends Object>(instances: Array<T>, options?: SerializationOptions): Array<Json<T>>``
+
+Converts a given array of instances of a class to its "json object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.
+
+Generic types:
+- ``T``: ***(optional)*** The object type (class) to be transformed into ``Json<T>``. **Default:** inferred.
+
+|Parameters|Type|Description|
+|---|:---:|---|
+|``instances``|``Array<T>``|The array of objects to be converted into ``Json<T>``.|
+|``options``|``SerializerOptions``|***(optional)*** Configure how the operation should be done. **Default:** Uses the global configuration.|
+
+|Throws|Description|
+|:---:|---|
+|``ArrayDimensionsOutOfRangeException``||
+|``IheritanceNonSerializableException``||
+|``NonSerializableException``||
+|``TypeMismatchException``||
+|``VersionMismatchException``||
+
+|Returns|
+|---|
+|The array converted to "JSON object" (plain object)|
+
+##### # ``public fromJson<T extends Object>(json: Json<T>, options?: DeserializationOptions): T``
+
+##### # ``public fromJson<T extends Object>(json: Array<Json<T>>, options?: DeserializationOptions): Array<T>``
+
+##### # ``public fromJson<T extends Object>(json: Json<T>, clazz: Class<T>, options?: DeserializationOptions): T``
+
+##### # ``public fromJson<T extends Object>(json: Array<Json<T>>, clazz: Class<T>, options?: DeserializationOptions): Array<T>``
+
+##### # ``protected readJson<T>(json: Json<T>): T``
+
+##### # ``protected writeJson<T>(instance: T): Json<T>``
+
 
 ### ``SerializerRegistry``
 
 Static class.
 
+### Methods details
+
+##### # ``public static addTransformer<T, S>(clazz: Class|string, transformer: ITransformerStatic<T, S>): void``
+
 ### ``SerializerMetadataReader``
 
 Static class.
+
+### ``ArrayTransformer``
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``ObjectTransformer``
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``MapTransformer``
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``SetTransformer``
