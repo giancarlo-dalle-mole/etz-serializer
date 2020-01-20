@@ -30,7 +30,12 @@ The following features are not supported, but may be added in the future. If you
 
 # Requirements
 
-* ES6+ JavaScript VM; 
+- ES6+ JavaScript VM;
+
+## Development
+
+- NodeJS 12.x LTS
+- TypeScript 3.6.4 
 
 # Usage
 
@@ -103,6 +108,40 @@ Known usages: [``@Transformer``](#transformert--any-s--any) [``SerializerConfig`
 |``SINGLETON``|Instantiate only once and then cache.|
 |``TRANSIENT``|Gets a new instance every time the object is required.|
 
+## Types
+
+### ``Class<T extends Object = Object>``
+
+Type alias for a class definition.
+
+Generic types:
+
+- ``T``: The type (class) being represented.
+
+Format: ``new(...args: any[]) => T``
+
+Known usages: [``SerializerRegistry``](#serializerregistry), [``Serializer``](#serializer), [``@Serializable``](#serializable), [``@Serialize``](#serializee--void), [``@Transformer``](#transformert--any-s--any)
+
+### ``Json<T extends Object>``
+
+Type alias for a json version of a given class. Only attributes are keep, functions are excluded.
+
+Generic types:
+
+- ``T``: The type (class) of the object this JSON structure represents.
+
+Format: ``Partial<Pick<T, { [K in keyof T]: T[K] extends Function ? never : K }[keyof T]>>``
+
+Known usages: [``ISerializable``](#iserializable), [``Serializer``](#serializer)
+
+### ``RegisteredTypesMap``
+
+Type alias for namespace type organization in [``SerializerRegistry``](#serializerregistry).
+
+Format: ``Map<string, Class|RegisteredTypesMap>``
+
+Known usages: [``SerializerRegistry``](#serializerregistry)
+
 ## Decorators
 
 ### ``@Serializable``
@@ -123,6 +162,7 @@ Signatures:
 |``name``|``string``|***(optional)*** Name of the type. MAY be used to define a custom name. **Default:** ``constructor.name`` (class name)|
 |``namespace``|``string``|***(optional)*** Namespace of the type. MAY be used to group related types. **Default:** ``""`` (empty string, global namespace)|
 |``version``|``number``|***(optional)*** Define the current version of the type (integer). MAY be used as a version control to prevent bugs of incompatible versions (i.e. client version <> server version). **Default:** ``1``|
+|``defaultStrategy``|``boolean``|***(optional)*** Flag to enable the default deserialization strategy used by ``Serializer``. **Default:** ``true``|
 
 ### ``@Serialize<E = void>``
 
@@ -150,7 +190,7 @@ Signatures:
 
 ### ``@Transformer<T = any, S = any>``
 
-Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert-sclazz-classstring-transformer-itransformerstatict-s-void) method. The class MUST implement the ``ITransformer<T, S>`` interface.
+Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert--any-s--anyclazz-class-transformer-itransformerstatict-s-void) method. The class MUST implement the ``ITransformer<T, S>`` interface.
 
 The default behavior is to instantiate only once and cache the object for the rest of the application lifecycle. This can be changed by setting the parameter ``TransformerOptions.instatiationBehavior``.
 
@@ -179,6 +219,8 @@ Signatures:
 
 Describes method signatures to customize an object serialization/deserialization process for classes marked with [``@Serializable``](#serializable) decorator. When a class implements this interface and the default [``Serializer``](#serializer) is used, the methods ``writeJson`` and ``readJson``  will be called during serialization and deserialization with the object resulted from the default strategy in [``Serializer#writeJson``](#-protected-writejsontinstance-t-jsont) and [``Serializer#readJson``](#-protected-readjsontjson-jsont-t).
 
+You MAY disable the default serialization/deserialization strategy for the class by setting the option ``defaultStrategy`` in ``@Serializable`` to ``false``.
+
 |Methods Summary|Description|
 |---|---|
 |[``public readJson<T>(default: T, json: Json<T>): T``](#-public-readjsontdefault-t-json-jsont-t)|Customize the deserialization operation. |
@@ -186,25 +228,37 @@ Describes method signatures to customize an object serialization/deserialization
 
 #### # ``public readJson<T>(default: T, json: Json<T>): T``
 
+This method is responsible for customizing the deserialization of the object, restoring it to the original state with the correct prototype. You MAY use this methods in two different ways: changing de ``default`` or creating a brand new object from ``json``. In all cases you must return the restored object (``T``).
+
+Generic Types:
+
+- ``T``: ***(optional)*** The restored object type. MUST be the class itself or not set (inferred). 
+
+|Parameters|Type|Description|
+|---|:---:|---|
+|``default``|``T``|The deserialized object using the default deserialization strategy. The object is an instance of ``T``.|
+|``json``|``Json<T>``|The raw JSON object being deserialized. The object is an instance of ``Object`` with ``Json<T>`` format.|
+
+|Returns|
+|:---:|
+|The deserialized object as an instance of ``T``.|
+
 #### # ``public writeJson<T>(default: Json<T>, instance: T): Json<T>``
 
-## Types
+This method is responsible for customizing the serialization of the object, generating a ``Json<T>`` version that can be converted into JSON. You MAY use this methods in two different ways: changing de ``default`` or creating a brand new object from ``instance``. In all cases you must return the serialized object (``Json<T>``).
 
-### ``Class<T extends Object = Object>``
+Generic Types:
 
-Type alias for a class definition.
+- ``T``: ***(optional)*** The type of the object to be serialized. MUST be the class itself or not set (inferred).
 
-Generic types:
+|Parameters|Type|Description|
+|---|:---:|---|
+|``default``|``Json<T>``|The serialized object using the default serialization strategy. The object is an instance of ``Object`` with ``Json<T>`` format.|
+|``instance``|``T``|The object instance to be serialized. The object is an instance of ``T``.|
 
-- ``T``: The type (class) being represented.
-
-### ``Json<T extends Object>``
-
-Type alias for a json version of a given class. Only attributes are keep, functions are excluded.
-
-Generic types:
-
-- ``T``: The type (class) of the object this JSON structure represents. 
+|Returns|
+|:---:|
+|The serialized object as an instance of ``Object`` in ``Json<T>`` format.|
 
 ## Classes
 
@@ -324,29 +378,65 @@ Generic types:
 
 ##### # ``protected writeJson<T>(instance: T): Json<T>``
 
-
 ### ``SerializerRegistry``
 
-Static class.
+***static class*** Holds information for all registered types marked with [``@Serializable``](#serializable) decorator and all transformers marked with [``@Transformer``](#transformert--any-s--any). Also provides methods to programmatically retrieve and add types and transformers. 
+
+|Method Summary|Description|
+|---|---|
+|``public static getTypes(): Map<string, RegisteredTypesMap>``|Gets the list of registered serializable types.|
+|``public static addType(clazz: Class, name?: string, namespace?: string, version?: number): void``|Registers a type in the registry as a serializable type. Imperative way instead of [``@Serializable``](#serializable).|
+|``public getTransformers(): Map<Class, ITransformer<any, any>>: void``|Gets the list of registered type transformers.|
+|``public addTransformer<T = any, S = any>(clazz: Class, transformer: ITransformerStatic<T, S>): void``|Registers a type transformer in the registry. Imperative way of [``@Transformer``](#transformert--any-s--any)|
 
 ### Methods details
 
-##### # ``public static addTransformer<T, S>(clazz: Class|string, transformer: ITransformerStatic<T, S>): void``
+##### # ``public static getTypes(): Map<string, RegisteredTypesMap>``
 
-### ``SerializerMetadataReader``
+##### # ``public static addType(clazz: Class, name?: string, namespace?: string, version?: number): void``
 
-Static class.
+##### # ``public static getTransformers(): Map<Class, ITransformer<any, any>>: void``
 
-### ``ArrayTransformer``
+##### # ``public static addTransformer<T = any, S = any>(clazz: Class, transformer: ITransformerStatic<T, S>): void``
 
-Decorated with: [``@Transformer``](#transformert--any-s--any)
+### ``ArrayTransformer implements ITransformer<Array<any>, Array<any>``
 
-### ``ObjectTransformer``
-
-Decorated with: [``@Transformer``](#transformert--any-s--any)
-
-### ``MapTransformer``
+Default ``Array`` transformer.
 
 Decorated with: [``@Transformer``](#transformert--any-s--any)
 
-### ``SetTransformer``
+### ``BooleanTransformer implements ITransformer<Boolean|boolean, boolean>``
+
+Default ``Boolean`` transformer.
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``MapTransformer implements ITransformer<Map<any, any>, Array<[any, any]>>``
+
+Default ``Map`` transformer.
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``NumberTransformer implements ITransformer<Number|number, number>``
+
+Default ``Number`` transformer.
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``ObjectTransformer implements ITransformer<Object, Json<Object>>``
+
+Default ``Object`` transformer.
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``SetTransformer implements ITransformer<Set<any>, Array<any>>``
+
+Default ``Set`` transformer.
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+### ``StringTransformer implements ITransformer<String|string, string>``
+
+Default ``String`` transformer.
+
+Decorated with: [``@Transformer``](#transformert--any-s--any)
