@@ -30,7 +30,7 @@ The following features are not supported, but may be added in the future. If you
 
 # Requirements
 
-- ES6+ JavaScript VM;
+- ES2018+ JavaScript VM (e.g.: NodeJS 12.x LTS+, Chrome 78+)
 
 ## Development
 
@@ -67,7 +67,7 @@ This section describes the internal rules and design decisions used in this libr
 * Global and per operation behavior configuration;
 * To enforce wrappers, you MUST use the enum [``TypesEnum.WRAPPER``](#typesenum) in the ``type`` parameter of [``@Serializable``](#serializable);
 * Possibility to serialize without creating any metadata;
-* Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the [``Serializer#deserializer``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) or [``Serializer#fromJson``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) method;
+* Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the [``Serializer#deserialize``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) or [``Serializer#fromJson``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) method;
 * If a wrapper is used (Number, Boolean, String), but it was not enforced by [``TypesEnum.WRAPPER``](#typesenum) enum, then value MUST be serialized/deserialized as a primitive;
 
 # Public API
@@ -142,6 +142,55 @@ Format: ``Map<string, Class|RegisteredTypesMap>``
 
 Known usages: [``SerializerRegistry``](#serializerregistry)
 
+## Interfaces
+
+### ``ISerializable``
+
+Describes method signatures to customize an object serialization/deserialization process for classes marked with [``@Serializable``](#serializable) decorator. When a class implements this interface and the default [``Serializer``](#serializer) is used, the methods ``writeJson`` and ``readJson``  will be called during serialization and deserialization with the object resulted from the default strategy in [``Serializer#writeJson``](#-protected-writejsontinstance-t-jsont) and [``Serializer#readJson``](#-protected-readjsontjson-jsont-t).
+
+You MAY disable the default serialization/deserialization strategy for the class by setting the option ``defaultStrategy`` in ``@Serializable`` to ``false``.
+
+|Methods Summary|Description|
+|---|---|
+|[``public readJson<T>(defaultInstance: T, json: Json<T>): T``](#-public-readjsontdefault-t-json-jsont-t)|Customize the deserialization operation. |
+|[``public writeJson<T>(defaultJson: Json<T>, instance: T): Json<T>``](#-public-writejsontdefault-jsont-instance-t-jsont)|Customize the serialization operation.|
+
+#### # ``public readJson<T>(default: T, json: Json<T>): T``
+
+This method is responsible for customizing the deserialization of the object, restoring it to the original state with the correct prototype. You MAY use this methods in two different ways: changing de ``default`` or creating a brand new object from ``json``. In all cases you must return the restored object (``T``).
+
+Generic Types:
+
+- ``T``: ***(optional)*** The restored object type. MUST be the class itself or not set (inferred). 
+
+|Parameters|Type|Description|
+|---|:---:|---|
+|``default``|``T``|The deserialized object using the default deserialization strategy. The object is an instance of ``T``.|
+|``json``|``Json<T>``|The raw JSON object being deserialized. The object is an instance of ``Object`` with ``Json<T>`` format.|
+
+|Returns|
+|:---:|
+|The deserialized object as an instance of ``T``.|
+
+#### # ``public writeJson<T>(default: Json<T>, instance: T): Json<T>``
+
+This method is responsible for customizing the serialization of the object, generating a ``Json<T>`` version that can be converted into JSON. You MAY use this methods in two different ways: changing de ``default`` or creating a brand new object from ``instance``. In all cases you must return the serialized object (``Json<T>``).
+
+Generic Types:
+
+- ``T``: ***(optional)*** The type of the object to be serialized. MUST be the class itself or not set (inferred).
+
+|Parameters|Type|Description|
+|---|:---:|---|
+|``default``|``Json<T>``|The serialized object using the default serialization strategy. The object is an instance of ``Object`` with ``Json<T>`` format.|
+|``instance``|``T``|The object instance to be serialized. The object is an instance of ``T``.|
+
+|Returns|
+|:---:|
+|The serialized object as an instance of ``Object`` in ``Json<T>`` format.|
+
+### ``ITransformer<T, S>``
+
 ## Decorators
 
 ### ``@Serializable``
@@ -190,7 +239,7 @@ Signatures:
 
 ### ``@Transformer<T = any, S = any>``
 
-Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert--any-s--anyclazz-class-transformer-itransformerstatict-s-void) method. The class MUST implement the ``ITransformer<T, S>`` interface.
+Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert--any-s--anyclazz-class-transformer-itransformerstatict-s-void) method. The class MUST implement the [``ITransformer<T, S>``](#itransformert-s) interface.
 
 The default behavior is to instantiate only once and cache the object for the rest of the application lifecycle. This can be changed by setting the parameter ``TransformerOptions.instatiationBehavior``.
 
@@ -211,54 +260,7 @@ Signatures:
 
 |``TransformerOptions``<br><sub><sup>(Type)</sup></sub>|Type|Description|
 |---|:---:|---|
-|``instantiationPolicy``|``InstantiationPolicyEnum``|***(optional)*** The specific policy of this transformer instantiation. Overrides global policy in ``SerializerConfig``. When using IoC containers with the adapter, this argument is passed to the ``IIoCContainerAdapter#bind`` method.  **Default:** ``InstantiationPolicyEnum.SINGLETON``.
-
-## Interfaces
-
-### ``ISerializable``
-
-Describes method signatures to customize an object serialization/deserialization process for classes marked with [``@Serializable``](#serializable) decorator. When a class implements this interface and the default [``Serializer``](#serializer) is used, the methods ``writeJson`` and ``readJson``  will be called during serialization and deserialization with the object resulted from the default strategy in [``Serializer#writeJson``](#-protected-writejsontinstance-t-jsont) and [``Serializer#readJson``](#-protected-readjsontjson-jsont-t).
-
-You MAY disable the default serialization/deserialization strategy for the class by setting the option ``defaultStrategy`` in ``@Serializable`` to ``false``.
-
-|Methods Summary|Description|
-|---|---|
-|[``public readJson<T>(default: T, json: Json<T>): T``](#-public-readjsontdefault-t-json-jsont-t)|Customize the deserialization operation. |
-|[``public writeJson<T>(default: Json<T>, instance: T): Json<T>``](#-public-writejsontdefault-jsont-instance-t-jsont)|Customize the serialization operation.|
-
-#### # ``public readJson<T>(default: T, json: Json<T>): T``
-
-This method is responsible for customizing the deserialization of the object, restoring it to the original state with the correct prototype. You MAY use this methods in two different ways: changing de ``default`` or creating a brand new object from ``json``. In all cases you must return the restored object (``T``).
-
-Generic Types:
-
-- ``T``: ***(optional)*** The restored object type. MUST be the class itself or not set (inferred). 
-
-|Parameters|Type|Description|
-|---|:---:|---|
-|``default``|``T``|The deserialized object using the default deserialization strategy. The object is an instance of ``T``.|
-|``json``|``Json<T>``|The raw JSON object being deserialized. The object is an instance of ``Object`` with ``Json<T>`` format.|
-
-|Returns|
-|:---:|
-|The deserialized object as an instance of ``T``.|
-
-#### # ``public writeJson<T>(default: Json<T>, instance: T): Json<T>``
-
-This method is responsible for customizing the serialization of the object, generating a ``Json<T>`` version that can be converted into JSON. You MAY use this methods in two different ways: changing de ``default`` or creating a brand new object from ``instance``. In all cases you must return the serialized object (``Json<T>``).
-
-Generic Types:
-
-- ``T``: ***(optional)*** The type of the object to be serialized. MUST be the class itself or not set (inferred).
-
-|Parameters|Type|Description|
-|---|:---:|---|
-|``default``|``Json<T>``|The serialized object using the default serialization strategy. The object is an instance of ``Object`` with ``Json<T>`` format.|
-|``instance``|``T``|The object instance to be serialized. The object is an instance of ``T``.|
-
-|Returns|
-|:---:|
-|The serialized object as an instance of ``Object`` in ``Json<T>`` format.|
+|``instantiationPolicy``|``InstantiationPolicyEnum``|***(optional)*** The specific policy of this transformer instantiation. Overrides global policy in ``SerializerConfig``.  **Default:** ``InstantiationPolicyEnum.SINGLETON``.
 
 ## Classes
 
@@ -395,9 +397,9 @@ Generic types:
 
 ##### # ``public static addType(clazz: Class, name?: string, namespace?: string, version?: number): void``
 
-##### # ``public static getTransformers(): Map<Class, ITransformer<any, any>>: void``
+##### # ``public static getTransformers(): Map<Class, ITransformer<any, any>>``
 
-##### # ``public static addTransformer<T = any, S = any>(clazz: Class, transformer: ITransformerStatic<T, S>): void``
+##### # ``public static addTransformer<T = any, S = any>(clazz: Class, transformer: ITransformerStatic<T, S>)``
 
 ### ``ArrayTransformer implements ITransformer<Array<any>, Array<any>``
 
@@ -440,3 +442,15 @@ Decorated with: [``@Transformer``](#transformert--any-s--any)
 Default ``String`` transformer.
 
 Decorated with: [``@Transformer``](#transformert--any-s--any)
+
+## Exceptions
+
+### ``TransformerAlreadyDefinedException extends Exception<TransformerAlreadyDefinedExceptionDetails>``
+
+Inherits: [``Exception``](https://github.com/giancarlo-dm/etz-exceptions#exceptiond--void-extends-error)
+
+# Sponsor
+
+Use my packages in your projects? You think they are awesome? So, help me give more time to develop them by becoming a sponsor. :wink:
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8KT6SPVB84XLY&source=url"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" alt="PayPal - The safer, easier way to pay online!"></a>

@@ -1,16 +1,7 @@
 {
-    "name": "@enterprize/etz-serializer",
+    "name": "@enterprize/serializer",
     "version": "1.0.0",
     "description": "Custom classes and native JavaScript classes serialization and deserialization with metadata into JSON compliant standard",
-    "main": "dist/index.js",
-    "scripts": {
-        "dev_compile": "tsc --watch",
-        "dev": "nodemon --watch ./dist --delay 5 -r source-map-support/register --inspect ./dist/index.js"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/giancarlo-dalle-mole/etz-serializer.git"
-    },
     "keywords": [
         "JSON",
         "Serializer",
@@ -19,18 +10,39 @@
         "Typed",
         "Classes"
     ],
-    "author": "Giancarlo Dalle Mole",
-    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/giancarlo-dalle-mole/etz-serializer.git"
+    },
     "bugs": {
         "url": "https://github.com/giancarlo-dalle-mole/etz-serializer/issues"
     },
     "homepage": "https://github.com/giancarlo-dalle-mole/etz-serializer#readme",
+    "author": "Giancarlo Dalle Mole",
+    "funding": {
+        "url": "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8KT6SPVB84XLY&source=url"
+    },
+    "license": "MIT",
+    "main": "dist/index.js",
+    "scripts": {
+        "compile": "tsc --watch",
+        "dev": "nodemon --watch ./dist --delay 5 -r source-map-support/register ./dist/index.js",
+        "test_dev": "nodemon --exec ts-node --watch ./test --watch ./src --delay 5 -r source-map-support/register ./test/index.ts"
+    },
+    "dependencies": {
+        "@enterprize/exceptions": "^1.0.2"
+    },
+    "peerDependencies": {
+        "tslib": "^1.10.0",
+        "reflect-metadata": "^0.1.13"
+    },
     "devDependencies": {
         "@types/node": "13.1.4",
         "nodemon": "2.0.2",
         "reflect-metadata": "0.1.13",
         "source-map-support": "0.5.16",
+        "ts-node": "8.6.2",
         "tslib": "1.10.0",
-        "typescript": "3.6.4"
+        "typescript": "3.7.5"
     }
 }
