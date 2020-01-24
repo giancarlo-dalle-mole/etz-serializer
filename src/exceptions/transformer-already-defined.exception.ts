@@ -3,7 +3,7 @@ import { Exception } from "@enterprize/exceptions";
 import { Class, ITransformer } from "../common";
 
 /**
- * Ecxeption indicating that a given type/class already have an {@link ITransformer} defined and the
+ * Exception indicating that a given type/class already have an {@link ITransformer} defined and the
  * flag {@link TransformerOptions.override} was ``false``, disallowing Transformer override.
  *
  * @version 1.0.0

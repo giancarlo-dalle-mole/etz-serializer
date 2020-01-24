@@ -1,10 +1,11 @@
-import { metadataKeys, SerializableFieldMetadata, SerializableMetadata } from "../../private";
+import { metadataKeys, SerializableFieldMetadata, SerializableMetadata } from "../common";
 import {
-    Class, InstantiationPolicyEnum, ITransformer, RegisteredTypesMap, RegisteredTransformerInfo,
-    SerializableOptions, TransformerOptions
+    Class, InstantiationPolicyEnum, ITransformer, RegisteredTransformerInfo, RegisteredTypesMap,
+    SerializableField, SerializableOptions, TransformerOptions
 } from "../common";
-import { SerializableField } from "../common";
-import { TransformerAlreadyDefinedException } from "../exceptions";
+import {
+    NotSerializableException, NotSerializableReasonEnum, TransformerAlreadyDefinedException
+} from "../exceptions";
 
 /**
  * (static class) Holds information for all registered types marked with {@link #Serializable @Serializable}
@@ -55,13 +56,13 @@ export class SerializerRegistry {
      *        custom name.
      */
     public static addType<C>(clazz: Class<C>, serializableFields: Array<SerializableField<C>>,
-                          options?: SerializableOptions): void {
+                             options?: SerializableOptions): void {
 
         options = options != null ? options : {};
 
         if (options.defaultStrategy === false &&
             (!Reflect.has(clazz.prototype, "readJson") || !Reflect.has(clazz.prototype, "writeJson"))) {
-            throw new Error("Must implement ISerializable when disabling defaultStrategy")
+            throw new NotSerializableException(clazz, NotSerializableReasonEnum.ISERIALIZABLE_REQUIRED);
         }
 
         let superClass: Class = Reflect.getPrototypeOf(clazz) as Class;

@@ -1,22 +1,21 @@
 import { IllegalArgumentException } from "@enterprize/exceptions";
-import { ITransformer, Json } from "../common";
+
+import { Class, ITransformer, Json } from "../common";
+import { TypesEnum } from "../enums";
+import { Serializer } from "../services";
 
 export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, ArrayExtra> {
 
     constructor() {
     }
 
-    /**
-     * @inheritDoc
-     */
-    public readJson<T>(defaultInstance: T, json: Json<T>, extra?: ArrayExtra): T {
+    public readJson(json: Json<Array<any>>, serializer: Serializer,
+                    extra?: ArrayExtra): Array<any> {
         return undefined;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public writeJson<T>(defaultJson: Json<T>, instance: Json<T>, extra?: ArrayExtra): Json<T> {
+    public writeJson(instance: Array<any>, serializer: Serializer,
+                     extra?: ArrayExtra): Json<Array<any>> {
         return undefined;
     }
 
@@ -64,6 +63,11 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
 
 export type ArrayExtra = {
 
+    /**
+     * (optional) The type of the elements of the array.
+     * @default {@link TypesEnum.ANY}
+     */
+    itemType?: () => Class|TypesEnum;
     /**
      * (optional) Defines the number of dimensions of the array. Set this property to an {@link ArrayDimensionsEnum}
      * value or any natural number (N, integer greater or equal than 0) to customize the number of dimensions.

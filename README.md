@@ -27,6 +27,7 @@ Custom classes and native TypeScript/JavaScript classes serialization and deseri
 The following features are not supported, but may be added in the future. If you requires any of the following *unsupported features*, please ask and propose a solution ;).
 
 - Generics - Since TypeScript uses the concept of [Type Erasure](https://en.wikipedia.org/wiki/Type_erasure), its very hard to come up with some architecture and API that does not involve too much manual definitions or JSON pollution;
+- Multiple Types (e.g. ``Number``|``MyClass``) - Despite it being relatively easy to implement, it is not a core feature since most of the serializable types have a well defined structure and multiple types normally is actived through inheritance, which is supported.
 
 # Requirements
 
@@ -47,7 +48,6 @@ This section describes the internal rules and design decisions used in this libr
 
 ## Commandments
 
-* MUST use Open/Closed principle of SOLID;
 * MUST be friendly to IoC containers, such as [Inversify](https://github.com/inversify/InversifyJS);
 * MUST only perform serialization/deserialization and type checking. JSON schema validation are other topic and have specific libraries for that (eg.: [AJV](https://github.com/epoberezkin/ajv));
 * SHOULD respect JSON standards, unless explicitly said otherwise; 
@@ -63,7 +63,7 @@ This section describes the internal rules and design decisions used in this libr
 
 ## Other Rules
 
-* All types/classes not decorated with [``@Serializable``](#serializable) MUST use a [``@Transformer``](#transformert--any-s--any) to perform serialization;
+* All types/classes not decorated with [``@Serializable``](#serializable) MUST use a [``@Transformer``](#transformert--any-s--any-e--void) to perform serialization;
 * Global and per operation behavior configuration;
 * To enforce wrappers, you MUST use the enum [``TypesEnum.WRAPPER``](#typesenum) in the ``type`` parameter of [``@Serializable``](#serializable);
 * Possibility to serialize without creating any metadata;
@@ -101,7 +101,7 @@ Known usages: [``SerializerConfig``](#serializer)
 
 Used to customize object instantiation policy.
 
-Known usages: [``@Transformer``](#transformert--any-s--any) [``SerializerConfig``](#serializer)
+Known usages: [``@Transformer``](#transformert--any-s--any-e--void) [``SerializerConfig``](#serializer)
 
 |Value|Description|
 |---|---|
@@ -120,7 +120,7 @@ Generic types:
 
 Format: ``new(...args: any[]) => T``
 
-Known usages: [``SerializerRegistry``](#serializerregistry), [``Serializer``](#serializer), [``@Serializable``](#serializable), [``@Serialize``](#serializee--void), [``@Transformer``](#transformert--any-s--any)
+Known usages: [``SerializerRegistry``](#serializerregistry), [``Serializer``](#serializer), [``@Serializable``](#serializable), [``@Serialize``](#serializee--void), [``@Transformer``](#transformert--any-s--any-e--void)
 
 ### ``Json<T extends Object>``
 
@@ -161,7 +161,7 @@ This method is responsible for customizing the deserialization of the object, re
 
 Generic Types:
 
-- ``T``: ***(optional)*** The restored object type. MUST be the class itself or not set (inferred). 
+- ``T``: ***(optional)*** The restored object type. MUST be the class itself or not set (inferred).
 
 |Parameters|Type|Description|
 |---|:---:|---|
@@ -189,7 +189,7 @@ Generic Types:
 |:---:|
 |The serialized object as an instance of ``Object`` in ``Json<T>`` format.|
 
-### ``ITransformer<T, S>``
+### ``ITransformer<T = any, S = any, E = voi>``
 
 ## Decorators
 
@@ -237,9 +237,9 @@ Signatures:
 |``groups``|``Array<string>``|***(optional)*** A list of serialization groups to include the attribute during serialization/deserialization.|
 |``extra``|``E``|***(optional)*** Some extra data to be passed to the ``Transformer`` during serialization/deserialization. An example of usage is for ``Array`` on the ``ArrayTransformer`` (``ArrayExtra``).
 
-### ``@Transformer<T = any, S = any>``
+### ``@Transformer<T = any, S = any, E = void>``
 
-Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert--any-s--anyclazz-class-transformer-itransformerstatict-s-void) method. The class MUST implement the [``ITransformer<T, S>``](#itransformert-s) interface.
+Marks a class a type transformer to be used during serialization/deserialization. The type is registered on the [``SerializerRegistry``](#serializerregistry). This decorator provides a declarative way to define a transformer instead of the direct use of [``SerializerRegistry#addTransformer``](#-public-static-addtransformert--any-s--anyclazz-class-transformer-itransformerstatict-s-void) method. The class MUST implement the [``ITransformer<T, S, E>``](#itransformert--any-s--any-e--voi) interface.
 
 The default behavior is to instantiate only once and cache the object for the rest of the application lifecycle. This can be changed by setting the parameter ``TransformerOptions.instatiationBehavior``.
 
@@ -247,6 +247,7 @@ Generic Types:
 
 - ``T``: The type to be transformed before serialization (input);
 - ``S``: The transformed type after serialization (output);
+- ``E``: ***(optional)*** Some extra data to be passed to the transformer in a per serializable field configuration. May be set in [``@Serialize``](#serializee--void) or directly in [``SerializerRegistry.addType``](#-public-static-addtypeclazz-class-name-string-namespace-string-version-number-void)
 
 Signatures:
 
@@ -444,6 +445,10 @@ Default ``String`` transformer.
 Decorated with: [``@Transformer``](#transformert--any-s--any)
 
 ## Exceptions
+
+### ``NotSerializableException extends Exception<NotSerializableExceptionDetails>``
+
+Inherits: [``Exception``](https://github.com/giancarlo-dm/etz-exceptions#exceptiond--void-extends-error)
 
 ### ``TransformerAlreadyDefinedException extends Exception<TransformerAlreadyDefinedExceptionDetails>``
 
