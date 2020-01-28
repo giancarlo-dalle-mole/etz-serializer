@@ -15,7 +15,7 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
     }
 
     public writeJson(instance: Array<any>, serializer: Serializer,
-                     extra?: ArrayExtra): Json<Array<any>> {
+                     extra?: ArrayExtra): Array<any> {
         return undefined;
     }
 

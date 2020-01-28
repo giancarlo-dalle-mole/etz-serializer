@@ -1,9 +1,8 @@
 import "reflect-metadata";
 
-import { Json, metadataKeys, SerializerRegistry } from "../src";
-import { ISerializable } from "../src/common/serializable.interface";
-import { Serializable } from "../src/decorators";
-import { Serialize } from "../src/decorators/serialize.decorator";
+import {
+    ISerializable, Json, metadataKeys, Serialize, Serializable, SerializerRegistry, Serializer
+} from "../src";
 
 class A {
 
@@ -90,9 +89,13 @@ abstract class Person {
     public phone: string;
 }
 
+class NonSerializable extends Person {
+
+    public thisWillNotSerialize: string;
+}
 
 @Serializable()
-class PhysicalPerson extends Person {
+class PhysicalPerson extends NonSerializable {
 
     @Serialize()
     public firstName: string;
@@ -104,7 +107,25 @@ class PhysicalPerson extends Person {
     public lastName: string;
 }
 
-let types = SerializerRegistry.getTypes();
-let transformers = SerializerRegistry.getTransformers();
-const sm = Reflect.getOwnMetadata(metadataKeys.serializable, PhysicalPerson);
-const sm2 = Reflect.getOwnMetadata(metadataKeys.serializable, Person);
+const serializer: Serializer = new Serializer();
+
+const a: A = new A();
+a.name = "Elizabeth Dummont";
+
+const as: Array<A> = [];
+for (let i: number = 1; i <= 3; i++) {
+
+    const a: A = new A();
+    a.name = `Name number ${i}`;
+    as.push(a);
+}
+
+const elizabeth: PhysicalPerson = new PhysicalPerson();
+elizabeth.firstName = "Elizabeth";
+elizabeth.lastName = "Dummont";
+elizabeth.phone = "32323232";
+elizabeth.thisWillNotSerialize = "this will not serialize";
+
+const aJson: Json<A> = serializer.toJson<A>(a);
+const elizabethJson: Json<PhysicalPerson> = serializer.toJson<PhysicalPerson>(elizabeth);
+

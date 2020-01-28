@@ -1,4 +1,4 @@
-import { Class, ITransformer, TransformerOptions } from "../common";
+import { Class, ITransformer, NewableClass, TransformerOptions } from "../common";
 import { SerializerRegistry } from "../services";
 
 /**
@@ -19,9 +19,9 @@ import { SerializerRegistry } from "../services";
  * @param type The type to be transformed in a JSON compatible format.
  * @param options (optional) Defines transformer options, such as instantiation policy.
  */
-export function Transformer<T = any, S = any, E = void>(type: Class, options?: TransformerOptions) {
+export function Transformer<T = any, S = any, E = void>(type: NewableClass, options?: TransformerOptions) {
 
-    return (constructor: Class<ITransformer<T, S, E>>) => {
+    return (constructor: NewableClass<ITransformer<T, S, E>>) => {
 
         SerializerRegistry.addTransformer<T, S, E>(constructor, type, options);
     };

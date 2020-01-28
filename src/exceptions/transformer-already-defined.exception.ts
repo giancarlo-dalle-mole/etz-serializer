@@ -1,6 +1,6 @@
 import { Exception } from "@enterprize/exceptions";
 
-import { Class, ITransformer } from "../common";
+import { Class, ITransformer, NewableClass } from "../common";
 
 /**
  * Exception indicating that a given type/class already have an {@link ITransformer} defined and the
@@ -12,8 +12,16 @@ import { Class, ITransformer } from "../common";
  */
 export class TransformerAlreadyDefinedException extends Exception<TransformerAlreadyDefinedExceptionDetails> {
 
-    constructor(details: TransformerAlreadyDefinedExceptionDetails) {
-        super(`There is an transformer already defined for type "${details.type.name}"`, details);
+    constructor(type: NewableClass, definedTransformer: NewableClass<ITransformer<any, any, any>>,
+                overrideTransformer: NewableClass<ITransformer<any, any, any>>) {
+        super(
+            `There is an transformer already defined for type "${type.name}"`,
+            {
+                type: type,
+                definedTransformer: definedTransformer,
+                overrideTransformer: overrideTransformer
+            }
+        );
     }
 }
 
@@ -29,13 +37,13 @@ export type TransformerAlreadyDefinedExceptionDetails = {
     /**
      * The type the {@link ITransformer} is responsible for transforming.
      */
-    type: Class;
+    type: NewableClass;
     /**
      * The {@link ITransformer} already defined.
      */
-    definedTransformer: Class<ITransformer<any, any, any>>;
+    definedTransformer: NewableClass<ITransformer<any, any, any>>;
     /**
      * The {@link ITransformer} that was tried to register.
      */
-    overrideTransformer: Class<ITransformer<any, any, any>>;
+    overrideTransformer: NewableClass<ITransformer<any, any, any>>;
 };

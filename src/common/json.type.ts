@@ -1,6 +1,8 @@
 /**
  * Type alias for a json version of a given class. Only attributes are keep, functions are excluded.
- * @param T - The type (class) of the object this JSON structure represents.
+ * ###
+ * ### Generic Types:
+ * - ``T``: The type (class) of the object this JSON structure represents.
  *
  * @version 1.0.0
  * @author Giancarlo Dalle Mole

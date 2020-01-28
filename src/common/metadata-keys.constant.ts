@@ -16,11 +16,21 @@ export const metadataKeys = {
      */
     serialize: "Enterprize:Serializer:serialize",
     /**
-     * Used to store all the registered serializable types on {@link Reflect} global object.
+     * Used to store all the registered serializable types organized by namespace on {@link Reflect}
+     * global object.
      */
-    registeredTypes: "Enterprize:Serializer:registeredTypes",
+    namespaceRegistry: "Enterprize:Serializer:namespaceRegistry",
+    /**
+     * Used to cache singleton transformers on {@link Reflect} global object.
+     */
+    transformersCache: "Enterprize:Serializer:transformersCache",
     /**
      * Used to store all the registered transformers on {@link Reflect} global object.
      */
-    registeredTransformers: "Enterprize:Serializer:registeredTransformers"
+    transformersRegistry: "Enterprize:Serializer:transformersRegistry",
+    /**
+     * Used to store all the registered serializable types organized by type reference on {@link Reflect}
+     * global object.
+     */
+    typesRegistry: "Enterprize:Serializer:typesRegistry"
 };

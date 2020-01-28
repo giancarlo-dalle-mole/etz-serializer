@@ -10,7 +10,7 @@ export class MapTransformer implements ITransformer<Map<any, any>, Array<[any, a
     }
 
     public writeJson(instance: Map<any, any>, serializer: Serializer,
-                     extra?: void): Json<Map<any, any>> {
+                     extra?: void):  Array<[any, any]> {
         return undefined;
     }
 }

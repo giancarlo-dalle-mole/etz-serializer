@@ -22,5 +22,5 @@ export interface ITransformer<T, S, E = void> {
      */
     readJson(json: Json<T>, serializer: Serializer, extra?: E): T;
 
-    writeJson(instance: T, serializer: Serializer, extra?: E): Json<T>;
+    writeJson(instance: T, serializer: Serializer, extra?: E): S;
 }

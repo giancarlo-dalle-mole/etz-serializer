@@ -9,5 +9,5 @@ export function Serializable<T extends Object>(options?: SerializableOptions) {
         Reflect.deleteMetadata(metadataKeys.serialize, constructor);
 
         SerializerRegistry.addType(constructor, serializableFields, options);
-    }
+    };
 }

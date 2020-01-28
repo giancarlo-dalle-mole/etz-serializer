@@ -24,7 +24,7 @@ Custom classes and native TypeScript/JavaScript classes serialization and deseri
 
 ## Unsupported features
 
-The following features are not supported, but may be added in the future. If you requires any of the following *unsupported features*, please ask and propose a solution ;).
+The following features are not supported, but may be added in the future. If you requires any of the following *unsupported features*, please ask and propose a solution. :wink:
 
 - Generics - Since TypeScript uses the concept of [Type Erasure](https://en.wikipedia.org/wiki/Type_erasure), its very hard to come up with some architecture and API that does not involve too much manual definitions or JSON pollution;
 - Multiple Types (e.g. ``Number``|``MyClass``) - Despite it being relatively easy to implement, it is not a core feature since most of the serializable types have a well defined structure and multiple types normally is actived through inheritance, which is supported.
@@ -223,6 +223,7 @@ Generic Types:
 Signatures:
 
 - ``@Serialize<E = void>()``
+- ``@Serialize<E = void>()``
 - ``@Serialize<E = void>(type: () => Class|Function|TypesEnum|Array<Class|Function|TypesEnum>)``
 - ``@Serialize<E = void>(options: SerializeOptions)``
 - ``@Serialize<E = void>(type: () => Class|Function|TypesEnum|Array<Class|Function|TypesEnum>, options: SerializeOptions)``
@@ -269,16 +270,16 @@ Signatures:
 
 The service that performs serialization and deserialization process. Can be configured globally or per operation to change the serialization and deserialization behaviors, such as including or not ``typeMetadata`` and performing other operations.
 
+Accessors Summary|Type|Description|
+|---|---|---|
+|``config``|``SerializerConfig``|Gets or sets the global configuration of the serializer service|
+
 |Methods Summary|Description|
 |---|---|
-|[``public getConfig(): SerializerConfig``](#-public-getconfig-serializerconfig)|Retrieves the global configuration of the serializer service.|
-|[``public setConfig(config: SerializationConfig): void``](#-public-setconfigconfig-serializationconfig-void)|Sets the global configuration of the serializer service.|
-|[``public clone<T extends Object>(instance: T): T``](#-public-clonet-extends-objectinstance-t-t)|Performs a deep clone of the object.|
-|[``public serialize<T extends Object>(instance: T Array<T>, options?: SerializationOptions): string``](#-public-serializet-extends-objectinstance-tarrayt-options-serializationoptions-string)|Serializes an object or an array of objects into a ``JSON`` ``string``.|
+|[``public serialize<T extends Object>(instance: T, options?: SerializationOptions): string``](#-public-serializet-extends-objectinstance-tarrayt-options-serializationoptions-string)|Serializes object(s) into a ``JSON`` ``string``.|
 |[``public deserialize<T extends Object>(json: string, options?: DeserializationOptions): T``](#-public-deserializet-extends-objectjson-string-options-deserializationoptions-t)|Deserializes a an ``JSON`` ``string`` into ``T``.|
-|[``public deserialize<T extends Object>(json: string, clazz: Class<T> options?: DeserializationOptions): T``](#-public-deserializet-extends-objectjson-string-options-deserializationoptions-t)|Deserializes a an ``JSON`` ``string`` into ``T`` by using ``clazzz`` as root type or type checking.|
-|[``public toJson<T extends Object>(instance: T, options?: SerializationOptions): Json<T>``](#-public-tojsont-extends-objectinstance-t-options-serializationoptions-jsont)|Converts a given instance of a class to its "JSON object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.|
-|[``public toJson<T extends Object>(instances: Array<T>, options?: SerializationOptions): Array<Json<T>>``](#-public-tojsont-extends-objectinstances-arrayt-options-serializationoptions-arrayjsont)|Converts a given array of instances of a class to its "json object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.|
+|[``public deserialize<T extends Object>(json: string, clazz: Class<T> options?: DeserializationOptions): T``](#-public-deserializet-extends-objectjson-string-options-deserializationoptions-t)|Deserializes a an ``JSON`` ``string`` into ``T`` by using ``clazz`` as root type or type checking.|
+|[``public toJson<T extends Object>(instance: T, options?: SerializationOptions): Json<T>``](#-public-tojsont-extends-objectinstance-t-options-serializationoptions-jsont)|Converts a given instance or instances of a class to its "JSON object" version, including, if configured, the necessary metadata to convert it back to a instance of the class.|
 |[``public fromJson<T extends Object>(json: Json<T>, options?: DeserializationOptions): T``](#-public-fromjsont-extends-objectjson-jsont-options-deserializationoptions-t)|Restores a given json object to its original instance of class, if possible. For the restoration process to work for some given classes, some metadata must be set.|
 |[``public fromJson<T extends Object>(json: Array<Json<T>>, options?: DeserializationOptions): Array<T>``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t)|Restores a given array of json objects to its original instance of class, if possible. For the restoration process to work for some given classes, some metadata must be set.|
 |[``public fromJson<T extends Object>(json: Json<T>, clazz: Class<T>, options?: DeserializationOptions): T``](#-public-fromjsont-extends-objectjson-arrayjsont-options-deserializationoptions-arrayt)|Restores a given json object to its original instance of class, if possible, using a specific class to validate or as the type of the root object. For the restoration process to work for some given classes, some metadata must be set.|

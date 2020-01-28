@@ -1,11 +1,12 @@
-import { metadataKeys, SerializableFieldMetadata, SerializableMetadata } from "../common";
 import {
-    Class, InstantiationPolicyEnum, ITransformer, RegisteredTransformerInfo, RegisteredTypesMap,
-    SerializableField, SerializableOptions, TransformerOptions
+    Class, InstantiationPolicyEnum, ITransformer, metadataKeys, NewableClass,
+    RegisteredTransformerInfo, RegisteredTypesMap, SerializableField, SerializableFieldMetadata,
+    SerializableMetadata, SerializableOptions, TransformerOptions
 } from "../common";
 import {
     NotSerializableException, NotSerializableReasonEnum, TransformerAlreadyDefinedException
 } from "../exceptions";
+import { NoTransformerDefinedException } from "../exceptions/no-transformer-defined.exception";
 
 /**
  * (static class) Holds information for all registered types marked with {@link #Serializable @Serializable}
@@ -21,13 +22,17 @@ export class SerializerRegistry {
     //#region Private Attributes
     /**
      * All the registered types organized by namespaces (starting with "" - global namespace) with
-     * some type information regarding the strategy to be used in serialization/deserialization.
+     * serializable metadata.
      */
-    private static registeredTypes: Map<string, RegisteredTypesMap> = SerializerRegistry.initializeTypesRegistry();
+    private static namespacesRegistry: Map<string, RegisteredTypesMap> = SerializerRegistry.initializeNamespaceRegistry();
     /**
      * All registered transformers.
      */
-    private static registeredTransformers: Map<Class, RegisteredTransformerInfo> = SerializerRegistry.initializeTransformersRegistry();
+    private static registeredTransformers: Map<NewableClass, RegisteredTransformerInfo> = SerializerRegistry.initializeTransformersRegistry();
+    /**
+     * Singletons transformers cache.
+     */
+    private static transformersCache: Map<NewableClass, ITransformer<any, any>> = SerializerRegistry.initializeTransformersCache();
     //#endregion
 
     //#region Constructor
@@ -40,11 +45,11 @@ export class SerializerRegistry {
 
     //#region Public Static Methods
     /**
-     * Gets the list of registered serializable types.
+     * Gets the list of registered serializable types organized by namespaces.
      * @return A {@link Map} of the registered types organized by namespaces.
      */
-    public static getTypes(): RegisteredTypesMap {
-        return SerializerRegistry.registeredTypes;
+    public static getNamespaces(): Map<string, RegisteredTypesMap> {
+        return this.namespacesRegistry;
     }
 
     /**
@@ -83,7 +88,7 @@ export class SerializerRegistry {
             fieldInfos.push(fieldInfo);
         }
 
-        const serializableInfo: SerializableMetadata = new SerializableMetadata(
+        const metadata: SerializableMetadata = new SerializableMetadata(
             clazz,
             options.namespace != null ? options.namespace : "",
             options.name !=  null ? options.name : clazz.name,
@@ -93,8 +98,8 @@ export class SerializerRegistry {
             fieldInfos
         );
 
-        const namespaceSplit: Array<string> = serializableInfo.namespace.split(".");
-        let namespace: RegisteredTypesMap = this.registeredTypes;
+        const namespaceSplit: Array<string> = metadata.namespace.split(".");
+        let namespace: RegisteredTypesMap = this.namespacesRegistry;
 
         let pointer: number = 0;
         while (pointer < namespaceSplit.length) {
@@ -112,8 +117,8 @@ export class SerializerRegistry {
             pointer++;
         }
 
-        Reflect.defineMetadata(metadataKeys.serializable, serializableInfo, clazz);
-        namespace.set(serializableInfo.name, clazz);
+        Reflect.defineMetadata(metadataKeys.serializable, metadata, clazz);
+        namespace.set(metadata.name, clazz);
     }
 
     /**
@@ -125,29 +130,77 @@ export class SerializerRegistry {
     }
 
     /**
+     * Verify if there is a transformer defined for the given type.
+     * @param clazz The type to be checked.
+     * @returns True if defined, false otherwise.
+     */
+    public static hasTransformer(clazz: NewableClass): boolean {
+        return this.registeredTransformers.has(clazz);
+    }
+
+    /**
+     * Retrieves a transformer instance for a given type.
+     * @param clazz The type to have the transformer instance retrieved.
+     * @returns Transformer instance for the given type.
+     *
+     * @throws NoTransformerDefinedException - If there is not transformer defined for the given type.
+     */
+    public static getTransformer(clazz: NewableClass): ITransformer<any, any> {
+
+        if (this.transformersCache.has(clazz)) {
+            return this.transformersCache.get(clazz);
+        }
+        else {
+
+            if (!this.registeredTransformers.has(clazz)) {
+                throw new NoTransformerDefinedException(clazz);
+            }
+            else {
+
+                const transformerInfo: RegisteredTransformerInfo = this.registeredTransformers.get(clazz);
+                const transformer: ITransformer<any, any> = Reflect.construct(transformerInfo.transformer, []);
+
+                // If a singleton, add to cache
+                if (transformerInfo.options.instantiationPolicy === InstantiationPolicyEnum.SINGLETON) {
+                    this.transformersCache.set(clazz, transformer);
+                }
+
+                return transformer;
+            }
+        }
+    }
+
+    /**
      * Registers a type transformer in the registry. Imperative way of {@link #Transformer @Transformer}.
      * @param transformer The class to be registered as a {@link ITransformer} for the given type.
      * @param clazz The class that the transformer is responsible for performing transformation.
      * @param options (optional)
      */
-    public static addTransformer<T = any, S = any, E = void>(transformer: Class<ITransformer<T, S, E>>, clazz: Class,
+    public static addTransformer<T = any, S = any, E = void>(transformer: NewableClass<ITransformer<T, S, E>>,
+                                                             clazz: NewableClass,
                                                              options?: TransformerOptions): void {
         options = options != null ? options : {};
         options.instantiationPolicy = options.instantiationPolicy != null ? options.instantiationPolicy : InstantiationPolicyEnum.SINGLETON;
         options.override = options.override != null ? options.override : false;
 
         if (this.registeredTransformers.has(clazz) && !options.override) {
-            throw new TransformerAlreadyDefinedException({
-                type: clazz,
-                definedTransformer: this.registeredTransformers.get(clazz).transformer,
-                overrideTransformer: transformer
-            });
+            throw new TransformerAlreadyDefinedException(
+                clazz,
+                this.registeredTransformers.get(clazz).transformer,
+                transformer
+            );
         }
         else {
             this.registeredTransformers.set(
                 clazz,
                 new RegisteredTransformerInfo(transformer, options)
-            )
+            );
+        }
+
+        // We clean the singleton transformers cache for the type, so if the transformer is overriden
+        // during program execution, it should return the correct instance of it.
+        if (this.transformersCache.has(clazz)) {
+            this.transformersCache.delete(clazz);
         }
     }
     //#endregion
@@ -156,31 +209,43 @@ export class SerializerRegistry {
     /**
      * Initializes the serializable types registry.
      */
-    private static initializeTypesRegistry(): Map<string, RegisteredTypesMap> {
+    private static initializeNamespaceRegistry(): Map<string, RegisteredTypesMap> {
 
-        if (!Reflect.hasMetadata(metadataKeys.registeredTypes, Reflect)) {
-            Reflect.defineMetadata(metadataKeys.registeredTypes, new Map<string, RegisteredTypesMap>([["", new Map<string, Class|RegisteredTypesMap>()]]), Reflect)
+        if (!Reflect.hasMetadata(metadataKeys.namespaceRegistry, Reflect)) {
+            Reflect.defineMetadata(metadataKeys.namespaceRegistry, new Map<string, RegisteredTypesMap>([["", new Map<string, Class|RegisteredTypesMap>()]]), Reflect);
         }
 
         // We define the registry as a metadata on the Reflect object itself due to some issues, such
         // as types that requires transformers not being correctly registered, when using a static
         // attribute of a class on Angular apps.
-        return Reflect.getMetadata(metadataKeys.registeredTypes, Reflect);
+        return Reflect.getMetadata(metadataKeys.namespaceRegistry, Reflect);
     }
 
     /**
      * Initializes the type transformers registry.
      */
-    private static initializeTransformersRegistry(): Map<Class, RegisteredTransformerInfo> {
+    private static initializeTransformersRegistry(): Map<NewableClass, RegisteredTransformerInfo> {
 
-        if (!Reflect.hasMetadata(metadataKeys.registeredTransformers, Reflect)) {
-            Reflect.defineMetadata(metadataKeys.registeredTransformers, new Map<Class, RegisteredTransformerInfo>(), Reflect);
+        if (!Reflect.hasMetadata(metadataKeys.transformersRegistry, Reflect)) {
+            Reflect.defineMetadata(metadataKeys.transformersRegistry, new Map<NewableClass, RegisteredTransformerInfo>(), Reflect);
         }
 
         // We define the registry as a metadata on the Reflect object itself due to some issues, such
         // as types that requires transformers not being correctly registered, when using a static
         // attribute of a class on Angular apps.
-        return Reflect.getMetadata(metadataKeys.registeredTransformers, Reflect);
+        return Reflect.getMetadata(metadataKeys.transformersRegistry, Reflect);
+    }
+
+    private static initializeTransformersCache(): Map<NewableClass, ITransformer<any, any>> {
+
+        if (!Reflect.hasMetadata(metadataKeys.transformersCache, Reflect)) {
+            Reflect.defineMetadata(metadataKeys.transformersCache, new Map<NewableClass, ITransformer<any, any>>(), Reflect);
+        }
+
+        // We define the registry as a metadata on the Reflect object itself due to some issues, such
+        // as types that requires transformers not being correctly registered, when using a static
+        // attribute of a class on Angular apps.
+        return Reflect.getMetadata(metadataKeys.transformersCache, Reflect);
     }
     //#endregion
 }

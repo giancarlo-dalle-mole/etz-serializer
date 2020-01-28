@@ -12,7 +12,7 @@ export class BooleanTransformer implements ITransformer<boolean|Boolean, boolean
     }
 
     public writeJson(instance: boolean | Boolean, serializer: Serializer,
-                     extra?: BooleanExtra): Json<boolean | Boolean> {
+                     extra?: BooleanExtra): boolean {
         return undefined;
     }
 }

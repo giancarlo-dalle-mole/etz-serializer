@@ -55,5 +55,5 @@ export function Serialize<E = void>(...args: []|[() => Class|TypesEnum]|[Seriali
         // noinspection JSMismatchedCollectionQueryUpdate
         const serializableFields: Array<SerializableField<any, E>> = Reflect.getOwnMetadata(metadataKeys.serialize, target.constructor);
         serializableFields.push(serializableField);
-    }
+    };
 }
