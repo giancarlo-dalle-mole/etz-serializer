@@ -13,7 +13,7 @@ export type JsonMetadata = {
      * with the class versions used to serialize the object. The order is from bottom to up in the
      * inheritance hierarchy (e.g. [C, B, A] in a C extends B, B extends A inheritance chain).
      */
-    versions: Array<[string, number]>;
+    versions?: Array<[string, number]>;
     /**
      * Array of tuples of object metadata to restore.
      */

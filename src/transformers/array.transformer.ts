@@ -9,13 +9,11 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
     constructor() {
     }
 
-    public readJson(json: Json<Array<any>>, serializer: Serializer,
-                    extra?: ArrayExtra): Array<any> {
+    public readJson(json: Array<any>, extra?: ArrayExtra, serializer?: Serializer): Array<any> {
         return undefined;
     }
 
-    public writeJson(instance: Array<any>, serializer: Serializer,
-                     extra?: ArrayExtra): Array<any> {
+    public writeJson(instance: Array<any>, extra?: ArrayExtra, serializer?: Serializer): Array<any> {
         return undefined;
     }
 
@@ -67,7 +65,7 @@ export type ArrayExtra = {
      * (optional) The type of the elements of the array.
      * @default {@link TypesEnum.ANY}
      */
-    itemType?: () => Class|TypesEnum;
+     itemType?: () => Class|TypesEnum;
     /**
      * (optional) Defines the number of dimensions of the array. Set this property to an {@link ArrayDimensionsEnum}
      * value or any natural number (N, integer greater or equal than 0) to customize the number of dimensions.

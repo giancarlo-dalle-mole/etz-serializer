@@ -3,14 +3,15 @@ import { NotImplementedYetException } from "@enterprize/exceptions";
 import {
     Class, ISerializable, ITransformer, Json, metadataKeys, NewableClass, SerializableField,
     SerializableFieldMetadata,
-    SerializableMetadata
+    SerializableMetadata, SerializeOptions
 } from "../common";
 import { BehaviorEnum } from "../enums";
-import { NotSerializableException, NotSerializableReasonEnum } from "../exceptions";
+import { NotSerializableException } from "../exceptions";
 import { DeserializationOptions } from "./deserialization-options.type";
 import { JsonMetadata } from "./json-metadata.type";
 import { SerializationOptions } from "./serialization-options.type";
 import { SerializerConfig } from "./serializer-config.type";
+import { JsonWriter } from "./json-writer";
 import { SerializerRegistry } from "./serializer-registry";
 
 /**
@@ -226,109 +227,147 @@ export class Serializer {
      * Converts a given instance of a class to its "JSON object" version, including, if configured,
      * the necessary metadata to convert it back to a instance of the class.
      * @param instance The instance to be converted to {@link Json}.
-     * @returns A {@link Json} of the object with the required metadata set.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public toJson<T extends Object>(instance: T): Json<T>;
-    /**
-     * Converts a given instance of a class to its "JSON object" version, including, if configured,
-     * the necessary metadata to convert it back to a instance of the class.
-     * @param instance The instance to be converted to {@link Json}.
      * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns A {@link Json} of the object with the required metadata set.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public toJson<T extends Object>(instance: T, options: SerializationOptions): Json<T>;
-    /**
-     * Converts an array of given instances of a class to its "JSON object" version, including, if
-     * configured, the necessary metadata to convert it back to a instance of the class.
-     * @param instances The instances array to be converted to {@link Json}.
-     * @returns A {@link Json} of the object with the required metadata set.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public toJson<T extends Object>(instances: Array<T>): Array<Json<T>>;
+    public toJson<T, S = Json<T>, E = void>(instance: T, options?: SerializationOptions, extra?: E): S;
+
     /**
      * Converts a given array of instances of a class to its "json object" version, including, if
      * configured, the necessary metadata to convert it back to a instance of the class.
      * @param instances The instances array to be converted to {@link Json}.
      * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns A {@link Json} of the object with the required metadata set.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public toJson<T extends Object>(instances: Array<T>, options: SerializationOptions): Array<Json<T>>;
-    public toJson<T extends Object>(...args: [T]|
-                                             [T, SerializationOptions]|
-                                             [Array<T>]|
-                                             [Array<T>, SerializationOptions]): Json<T>|Array<Json<T>> {
+    public toJson<T, S = Json<T>, E = void>(instances: Array<T>, options?: SerializationOptions, extra?: E): Array<S>;
+    public toJson<T, S = Json<T>, E = void>(...args: any[]): S|Array<S> {
+
+        const instance: T|Array<T> = args[0];
+        const options: SerializationOptions = args[1];
+        const extra: E = args[2];
 
         // The instance is null/undefined, no need to work
-        if (args[0] == null) {
-            return args[0];
+        if (instance == null) {
+            return instance === null ? null : undefined;
         }
 
-        let options: SerializationOptions;
+        // Options for the operation with defaults
+        let opOptions: SerializationOptions;
 
         // No options, set defaults
-        if (args.length === 1) {
-            options = {
+        if (args[1] == null) {
+            opOptions = {
                 typeMetadata: this._config.typeMetadata,
                 objectMetadata: this._config.objectMetadata,
                 groups: null,
-                excludeUngrouped: false,
+                excludeUngrouped: false
             };
         }
         // With options, set defaults if not set
         else {
-            options = args[1];
-            options.typeMetadata = options.typeMetadata != null ? options.typeMetadata : this._config.typeMetadata;
-            options.objectMetadata = options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata;
-            options.groups = options.groups != null ? options.groups : null;
-            options.excludeUngrouped = options.excludeUngrouped != null ? options.excludeUngrouped : false;
+            opOptions = {
+                typeMetadata: options.typeMetadata != null ? options.typeMetadata : this._config.typeMetadata,
+                objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
+                groups: options.groups != null ? options.groups : null,
+                excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : false
+            };
         }
 
-
-        const objectType: Class<any> = (args[0]).constructor;
+        // Type of the instance
+        const objectType: Class = (args[0]).constructor;
 
         // Verify if the type has a transformer
         if (SerializerRegistry.hasTransformer(objectType as NewableClass)) {
 
-            const transformer: ITransformer<T|Array<T>, any> = SerializerRegistry.getTransformer(objectType as NewableClass);
-            return transformer.writeJson(args[0] as T|Array<T>, this);
+            const transformer: ITransformer<T|Array<T>, S, E> = SerializerRegistry.getTransformer(objectType as NewableClass);
+            return transformer.writeJson(instance, extra, this);
         }
         // Verify if its a serializable type
         else if (Reflect.hasOwnMetadata(metadataKeys.serializable, objectType)) {
 
-            const instance: T = args[0] as T;
-
             let currentMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, objectType);
             const metadata: Array<SerializableMetadata> = [currentMetadata];
             while (currentMetadata.superClazz != Object) {
-
                 currentMetadata = Reflect.getMetadata(metadataKeys.serializable, currentMetadata.superClazz);
-                metadata.push(currentMetadata);
+                metadata.unshift(currentMetadata); //We use unshift to facilitate TOP - BOTTOM approach
             }
 
-            console.log(metadata);
+            const json: Json<T> = {};
 
+            let versions: Array<[string, number]>;
+            let objectMetadata: Array<[string, any]>;
 
-            let json: Json<T> = null;
+            if (opOptions.typeMetadata) {
+                versions = [];
+            }
 
-            return json;
+            for (let serializableMetadata of metadata) {
+
+                const serializerOutput: JsonWriter<T> = new JsonWriter<T>(
+                    this, opOptions, instance as T, serializableMetadata, json
+                );
+
+                // Checks and calls custom writeJson from ISerializable interface
+                if (serializableMetadata.clazz.prototype.hasOwnProperty("writeJson")) {
+                    Reflect.apply(
+                        Reflect.get(serializableMetadata.clazz.prototype, "writeJson"),
+                        instance,
+                        [serializerOutput]
+                    );
+                }
+                else {
+                    serializerOutput.defaultWriteJson();
+                }
+
+                // Add the class version used
+                if (opOptions.typeMetadata) {
+                    versions.push([
+                        `${serializableMetadata.namespace}.${serializableMetadata.name}`,
+                        serializableMetadata.version
+                    ]);
+                }
+            }
+
+            // If set to add instance metadata (if any)
+            if (opOptions.objectMetadata) {
+
+                const instanceMetadataKeys: string[] = Reflect.getMetadataKeys(instance);
+                if (instanceMetadataKeys.length > 0) {
+
+                    objectMetadata = [];
+
+                    for (let metadataKey of instanceMetadataKeys) {
+                        objectMetadata.push([
+                            metadataKey,
+                            Reflect.getMetadata(metadataKey, instance)
+                        ]);
+                    }
+                }
+            }
+
+            // if any metadata was set, add to json
+            if ((versions != null && versions.length > 0) || (objectMetadata != null && objectMetadata.length > 0)) {
+                const jsonMetadata: JsonMetadata = {
+                    versions: versions,
+                    objectMetadata: objectMetadata
+                };
+                Reflect.set(json, "__enterprize:serializer:metadata", jsonMetadata);
+            }
+
+            return json as any;
         }
         else {
-            throw new NotSerializableException(args[0], NotSerializableReasonEnum.UNKNOWN_TYPE);
+            throw new NotSerializableException(instance);
         }
     }
 
@@ -337,151 +376,34 @@ export class Serializer {
      * process to work 100% for some given cases (i.e. when inheritance is involved), some metadata
      * must be present in the {@link Json} object.
      * @param json The object in {@link Json} format to be restored in ``T`` instance.
-     * @returns The restored object as a ``T`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public fromJson<T extends Object>(json: Json<T>): T;
-    /**
-     * Restores a given json object to its original instance of class, if possible. For the restoration
-     * process to work 100% for some given cases (i.e. when inheritance is involved), some metadata
-     * must be present in the {@link Json} object.
-     * @param json The object in {@link Json} format to be restored in ``T`` instance.
+     * @param clazz (optional) The class to be used as a root type or for type checking.
      * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns The restored object as a ``T`` instance.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public fromJson<T extends Object>(json: Json<T>, options: DeserializationOptions): T;
+    public fromJson<T, S = Json<T>, E = void>(json: Json<T>, clazz?: Class,
+                                              options?: SerializationOptions, extra?: E): T;
     /**
      * Restores a given array of json object to its original instance of class, if possible. For the
      * restoration process to work 100% for some given cases (i.e. when inheritance is involved),
      * some metadata must be present in the {@link Json} object.
      * @param jsons The array of object in {@link Json} format to be restored in ``Array<T>`` instance.
+     * @param clazz (optional) The class to be used as a root type or for type checking.
+     * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns The restored object as an ``Array<T>`` instance.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public fromJson<T extends Object>(jsons: Array<Json<T>>): Array<T>;
-    /**
-     * Restores a given array of json object to its original instance of class, if possible. For the
-     * restoration process to work 100% for some given cases (i.e. when inheritance is involved),
-     * some metadata must be present in the {@link Json} object.
-     * @param jsons The array of object in {@link Json} format to be restored in ``Array<T>`` instance.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @returns The restored object as an ``Array<T>`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public fromJson<T extends Object>(jsons: Array<Json<T>>, options: DeserializationOptions): Array<T>;
-    /**
-     * Restores a given json object to its original instance of class, if possible, using a specific
-     * class to validate or as the type of the root object. For the restoration process to work 100%
-     * for some given cases (i.e. when inheritance is involved), some metadata must be present in the
-     * {@link Json} object.
-     * @param json The object in {@link Json} format to be restored in ``T`` instance.
-     * @param clazz The class to be used as a root type or for type checking.
-     * @returns The restored object as a ``T`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public fromJson<T extends Object>(json: Json<T>, clazz: Class<T>): T;
-    /**
-     * Restores a given json object to its original instance of class, if possible, using a specific
-     * class to validate or as the type of the root object. For the restoration process to work 100%
-     * for some given cases (i.e. when inheritance is involved), some metadata must be present in the
-     * {@link Json} object.
-     * @param json The object in {@link Json} format to be restored in ``T`` instance.
-     * @param clazz The class to be used as a root type or for type checking.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @returns The restored object as a ``T`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public fromJson<T extends Object>(json: Json<T>, clazz: Class<T>, options: DeserializationOptions): T;
-    /**
-     * Restores a given array of json objects to its original instance of class, if possible, using
-     * a specific class to validate or as the type of the root object. For the restoration process to
-     * work 100% for some given cases (i.e. when inheritance is involved), some metadata must be present
-     * in the {@link Json} object.
-     * @param jsons The object array in {@link Json} format to be restored in ``Array<T>`` instance.
-     * @param clazz The class to be used as a root type or for type checking.
-     * @returns The restored object array as a ``Array<T>`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public fromJson<T extends Object>(jsons: Array<Json<T>>, clazz: Class<T>): Array<T>;
-    /**
-     * Restores a given array of json objects to its original instance of class, if possible, using
-     * a specific class to validate or as the type of the root object. For the restoration process to
-     * work 100% for some given cases (i.e. when inheritance is involved), some metadata must be present
-     * in the {@link Json} object.
-     * @param jsons The object array in {@link Json} format to be restored in ``Array<T>`` instance.
-     * @param clazz The class to be used as a root type or for type checking.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @returns The restored object array as a ``Array<T>`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public fromJson<T extends Object>(jsons: Array<Json<T>>, clazz: Class<T>, options: DeserializationOptions): Array<T>;
-
-    public fromJson<T extends Object>(...args: [Json<T>]|
-                                               [Json<T>, DeserializationOptions]|
-                                               [Array<Json<T>>]|
-                                               [Array<Json<T>>, DeserializationOptions]|
-                                               [Json<T>, Class<T>]|
-                                               [Json<T>, Class<T>, DeserializationOptions]|
-                                               [Array<Json<T>>, Class<T>]|
-                                               [Array<Json<T>>, Class<T>, DeserializationOptions]): T|Array<T> {
-        throw new NotImplementedYetException();
-    }
-    //#endregion
-
-    //#region Protected Methods
-    /**
-     * Default deserialization strategy for serializable classes. Classes that implements
-     * {@link ISerializable} MAY receive the result of this method and can customize the operation
-     * per class. Override this method to customize the default deserialization process.
-     * @param json The object in {@link Json} format
-     * @returns The restored object as a ``T`` instance.
-     *
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a not serializable type is received.
-     * @throws {@link VersionMismatchException} - When a not serializable type is received.
-     */
-    protected readJson<T>(json: Json<T>): T {
-        throw new NotImplementedYetException();
-    }
-
-    /**
-     * Default serialization strategy for serializable classes. Classes that implements
-     * {@link  ISerializable} will receive the result of this method and can customize the operation
-     * per class. Override this method to customize the default serialization process.
-     * @param instance The instance of ``T`` to be serialized.
-     * @param metadata Serializable metadata of the prototype chain.
-     * @returns The serialized object in {@link Json} format.
-     *
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a not serializable type is received.
-     * @throws {@link VersionMismatchException} - When a not serializable type is received.
-     */
-    protected writeJson<T>(instance: T, metadata: Array<SerializableMetadata>): Json<T> {
+    public fromJson<T, S = Json<T>, E = void>(jsons: Array<Json<T>>, clazz?: Class,
+                                              options?: SerializationOptions, extra?: E): Array<T>;
+    public fromJson<T, S = Json<T>, E = void>(...args: any[]): T|Array<T> {
         throw new NotImplementedYetException();
     }
     //#endregion

@@ -70,6 +70,44 @@ This section describes the internal rules and design decisions used in this libr
 * Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the [``Serializer#deserialize``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) or [``Serializer#fromJson``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) method;
 * If a wrapper is used (Number, Boolean, String), but it was not enforced by [``TypesEnum.WRAPPER``](#typesenum) enum, then value MUST be serialized/deserialized as a primitive;
 
+## Serialization/Deserialization Process
+
+### Serialization
+
+To serialize an object, an TOP -> BOTTOM strategy is used. In other words, this means that the object is first serialized from its top hierarchy (parent class) to the bottom hierarchy (subclass). Example:
+```typescript
+
+class A {
+    // Serializable fields
+}
+
+class B extends A {
+    // Serializable fields
+}
+```
+
+In this example, all the fields on the class ``A`` marked to serialization will be serialized with the default strategy first, then if the class implements the [``ISerializable``](#iserializable) interface, the method ``writeJson`` will be called with the generated json. After ``A`` has its fields serialized, the [``Serializer``](#serializer) will move down the hierarchy, serializing ``B`` with the same strategy as ``A``.
+
+Note: inside ``writeJson`` method you MUST use ``this`` to reference the object being serialized. Also, if the class inherits other serializable classes, the json will contain the serialized fields declared on those classes. 
+
+### Deserialization
+
+To deserialize an object, an TOP -> BOTTOM strategy is also used. In other words, this means that the object is first deserialized from its top hierarchy (parent class) to the bottom hierarchy (subclass). Example:
+```typescript
+
+class A {
+    // Serializable fields
+}
+
+class B extends A {
+    // Serializable fields
+}
+```
+
+In this example, a ``B`` instance will be created first, but the deserialization of the fields will begin from the ``A`` class with the default strategy, then if the class implements the [``ISerializable``](#iserializable) interface, the method ``readJson`` will be called with the raw json. After ``A`` has its fields deserialized, the [``Serializer``](#serializer) will move down the hierarchy, deserializing ``B`` fields with the same strategy as ``A``.
+
+Note: inside ``readJson`` method you MUST use ``this`` to reference the object being deserialized. Also, if the class inherits other serializable classes, all the classes up on the hierarchy will be already deserialized and their fields MAY be safely used.
+
 # Public API
 
 ## Enums

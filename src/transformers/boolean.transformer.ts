@@ -1,4 +1,4 @@
-import { ITransformer, Json } from "../common";
+import { ITransformer } from "../common";
 import { Serializer } from "../services";
 
 export class BooleanTransformer implements ITransformer<boolean|Boolean, boolean, BooleanExtra> {
@@ -6,13 +6,11 @@ export class BooleanTransformer implements ITransformer<boolean|Boolean, boolean
     constructor() {
     }
 
-    public readJson(json: Json<boolean | Boolean>, serializer: Serializer,
-                    extra?: BooleanExtra): boolean | Boolean {
+    public readJson(json: boolean, extra?: BooleanExtra, serializer?: Serializer): boolean | Boolean {
         return undefined;
     }
 
-    public writeJson(instance: boolean | Boolean, serializer: Serializer,
-                     extra?: BooleanExtra): boolean {
+    public writeJson(instance: boolean | Boolean, extra?: BooleanExtra, serializer?: Serializer): boolean {
         return undefined;
     }
 }

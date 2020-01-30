@@ -3,10 +3,7 @@ import {
     RegisteredTransformerInfo, RegisteredTypesMap, SerializableField, SerializableFieldMetadata,
     SerializableMetadata, SerializableOptions, TransformerOptions
 } from "../common";
-import {
-    NotSerializableException, NotSerializableReasonEnum, TransformerAlreadyDefinedException
-} from "../exceptions";
-import { NoTransformerDefinedException } from "../exceptions/no-transformer-defined.exception";
+import { NoTransformerDefinedException, TransformerAlreadyDefinedException } from "../exceptions";
 
 /**
  * (static class) Holds information for all registered types marked with {@link #Serializable @Serializable}
@@ -32,7 +29,7 @@ export class SerializerRegistry {
     /**
      * Singletons transformers cache.
      */
-    private static transformersCache: Map<NewableClass, ITransformer<any, any>> = SerializerRegistry.initializeTransformersCache();
+    private static transformersCache: Map<NewableClass, ITransformer<any, any, any>> = SerializerRegistry.initializeTransformersCache();
     //#endregion
 
     //#region Constructor
@@ -65,11 +62,6 @@ export class SerializerRegistry {
 
         options = options != null ? options : {};
 
-        if (options.defaultStrategy === false &&
-            (!Reflect.has(clazz.prototype, "readJson") || !Reflect.has(clazz.prototype, "writeJson"))) {
-            throw new NotSerializableException(clazz, NotSerializableReasonEnum.ISERIALIZABLE_REQUIRED);
-        }
-
         let superClass: Class = Reflect.getPrototypeOf(clazz) as Class;
         if (superClass === Reflect.getPrototypeOf(Object)) {
             superClass = Object;
@@ -93,7 +85,6 @@ export class SerializerRegistry {
             options.namespace != null ? options.namespace : "",
             options.name !=  null ? options.name : clazz.name,
             options.version = options.version != null ? options.version : 1,
-            options.defaultStrategy = options.defaultStrategy != null ? options.defaultStrategy : true,
             superClass,
             fieldInfos
         );
@@ -145,7 +136,7 @@ export class SerializerRegistry {
      *
      * @throws NoTransformerDefinedException - If there is not transformer defined for the given type.
      */
-    public static getTransformer(clazz: NewableClass): ITransformer<any, any> {
+    public static getTransformer<T, S, E>(clazz: NewableClass): ITransformer<T, S, E> {
 
         if (this.transformersCache.has(clazz)) {
             return this.transformersCache.get(clazz);
@@ -158,7 +149,7 @@ export class SerializerRegistry {
             else {
 
                 const transformerInfo: RegisteredTransformerInfo = this.registeredTransformers.get(clazz);
-                const transformer: ITransformer<any, any> = Reflect.construct(transformerInfo.transformer, []);
+                const transformer: ITransformer<T, S, E> = Reflect.construct(transformerInfo.transformer, []);
 
                 // If a singleton, add to cache
                 if (transformerInfo.options.instantiationPolicy === InstantiationPolicyEnum.SINGLETON) {

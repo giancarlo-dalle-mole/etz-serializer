@@ -30,11 +30,6 @@ export class SerializableMetadata {
      */
     public readonly version: number;
     /**
-     * Flag to enable/disable the default serialization/deserialization strategy. When set to ``false``
-     * (disabled), the serializable class MUST implement the {@link ISerializable} interface.
-     */
-    public readonly defaultStrategy: boolean;
-    /**
      * The parent class.
      */
     public readonly superClazz: Class;
@@ -45,15 +40,13 @@ export class SerializableMetadata {
     //#endregion
 
     //#region Constructor
-    constructor(clazz: Class, namespace: string, name: string, version: number, defaultStrategy: boolean,
-                superClazz: Class,
+    constructor(clazz: Class, namespace: string, name: string, version: number, superClazz: Class,
                 serializableFields: Array<SerializableFieldMetadata>) {
 
         this.clazz = clazz;
         this.namespace = namespace;
         this.name = name;
         this.version = version;
-        this.defaultStrategy = defaultStrategy;
         this.superClazz = superClazz;
         this.serializableFields = serializableFields;
     }

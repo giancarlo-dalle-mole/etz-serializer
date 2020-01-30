@@ -1,26 +1,26 @@
 import "reflect-metadata";
 
 import {
-    ISerializable, Json, metadataKeys, Serialize, Serializable, SerializerRegistry, Serializer
+    ISerializable, Json, Serialize, Serializable, SerializerRegistry, Serializer
 } from "../src";
+import { JsonWriter } from "../src/services/json-writer";
 
 class A {
 
     public name: string;
 }
 
-class B implements ISerializable {
+class B implements ISerializable<B> {
 
     public name: string;
 
     public birthDate: Date;
 
-    public readJson<T>(defaultInstance: T, json: Json<T>): T {
+    public readJson<T>(json: Json<T>): void {
         return undefined;
     }
 
-    public writeJson<T>(defaultJson: Json<T>, instance: T): Json<T> {
-        return undefined;
+    public writeJson(serializerOutput: JsonWriter<B>): void {
     }
 }
 
@@ -55,8 +55,7 @@ SerializerRegistry.addType(
     {
         namespace: "Financial",
         name: "BCustom",
-        version: 2,
-        defaultStrategy: false
+        version: 2
     }
 );
 
@@ -83,10 +82,22 @@ SerializerRegistry.addType(
 );
 
 @Serializable()
-abstract class Person {
+abstract class Person implements ISerializable<Person> {
 
     @Serialize()
     public phone: string;
+
+    public notMarkedButAdded: string;
+
+    public readJson(json: Json<Person>): void {
+        return undefined;
+    }
+
+    public writeJson(serializerOutput: JsonWriter<Person>): void {
+
+        serializerOutput.defaultWriteJson();
+        serializerOutput.json.notMarkedButAdded = "this is custom";
+    }
 }
 
 class NonSerializable extends Person {
@@ -103,8 +114,8 @@ class PhysicalPerson extends NonSerializable {
     @Serialize()
     public middleName: string;
 
-    @Serialize()
-    public lastName: string;
+    @Serialize({extra: {isWrapper: true}})
+    public lastName: String;
 }
 
 const serializer: Serializer = new Serializer();
@@ -122,10 +133,10 @@ for (let i: number = 1; i <= 3; i++) {
 
 const elizabeth: PhysicalPerson = new PhysicalPerson();
 elizabeth.firstName = "Elizabeth";
-elizabeth.lastName = "Dummont";
+elizabeth.lastName = new String("Dummont");
 elizabeth.phone = "32323232";
 elizabeth.thisWillNotSerialize = "this will not serialize";
 
-const aJson: Json<A> = serializer.toJson<A>(a);
+// const aJson: Json<A> = serializer.toJson<A>(a);
 const elizabethJson: Json<PhysicalPerson> = serializer.toJson<PhysicalPerson>(elizabeth);
-
+console.log();

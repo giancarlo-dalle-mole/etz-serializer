@@ -1,5 +1,4 @@
 import { Serializer } from "../services";
-import { Json } from "./json.type";
 
 /**
  * Describes method signatures for a type transformer.
@@ -20,7 +19,7 @@ export interface ITransformer<T, S, E = void> {
      *        format.
      * The deserialized object as an instance of T.
      */
-    readJson(json: Json<T>, serializer: Serializer, extra?: E): T;
+    readJson(json: S, extra?: E, serializer?: Serializer): T;
 
-    writeJson(instance: T, serializer: Serializer, extra?: E): S;
+    writeJson(instance: T, extra?: E, serializer?: Serializer): S;
 }
