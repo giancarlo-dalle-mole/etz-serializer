@@ -1,4 +1,4 @@
-import { Serializer } from "../services";
+import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
 
 /**
  * Describes method signatures for a type transformer.
@@ -17,9 +17,10 @@ export interface ITransformer<T, S, E = void> {
      *        {@link ExtraTransformDataRequiredException} if the transform requires it. You MAY want
      *        to throw {@link InvalidExtraTransformDataException} if the extra data is in an invalid
      *        format.
+     * @param options (optional)
      * The deserialized object as an instance of T.
      */
-    readJson(json: S, extra?: E, serializer?: Serializer): T;
+    readJson(json: S, extra?: E, serializer?: Serializer, options?: DeserializationOptions): T;
 
-    writeJson(instance: T, extra?: E, serializer?: Serializer): S;
+    writeJson(instance: T, extra?: E, serializer?: Serializer, options?: SerializationOptions): S;
 }

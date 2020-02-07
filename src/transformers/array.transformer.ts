@@ -1,21 +1,24 @@
 import { IllegalArgumentException } from "@enterprize/exceptions";
 
-import { Class, ITransformer, Json } from "../common";
+import { Class, ITransformer } from "../common";
 import { TypesEnum } from "../enums";
-import { Serializer } from "../services";
+import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
 
 export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, ArrayExtra> {
 
     constructor() {
     }
 
-    public readJson(json: Array<any>, extra?: ArrayExtra, serializer?: Serializer): Array<any> {
+    public readJson(json: Array<any>, extra?: ArrayExtra, serializer?: Serializer,
+                    options?: DeserializationOptions): Array<any> {
         return undefined;
     }
 
-    public writeJson(instance: Array<any>, extra?: ArrayExtra, serializer?: Serializer): Array<any> {
+    public writeJson(instance: Array<any>, extra?: ArrayExtra, serializer?: Serializer,
+                     options?: SerializationOptions): Array<any> {
         return undefined;
     }
+
 
     /**
      * Validates the "extra" options on {@link SerializeOptions}.
@@ -43,15 +46,15 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
         if (extra.rangeDimensions != null) {
 
             if (extra.rangeDimensions.min > extra.rangeDimensions.max) {
-                throw new IllegalArgumentException("\"rangeDimensions.min\" must be less than \"rangeDimensions.max\"", "extra.rangeDimensions", {value: extra.rangeDimensions})
+                throw new IllegalArgumentException("\"rangeDimensions.min\" must be less than \"rangeDimensions.max\"", "extra.rangeDimensions", {value: extra.rangeDimensions});
             }
 
             if (!Number.isSafeInteger(extra.rangeDimensions.min) && extra.rangeDimensions.min <= 0) {
-                throw new IllegalArgumentException("\"rangeDimensions.min\" MUST be a safe integer greater than 0 (zero)", "extra.rangeDimensions.min", {value: extra.rangeDimensions.min})
+                throw new IllegalArgumentException("\"rangeDimensions.min\" MUST be a safe integer greater than 0 (zero)", "extra.rangeDimensions.min", {value: extra.rangeDimensions.min});
             }
 
             if (!Number.isSafeInteger(extra.rangeDimensions.max) && extra.rangeDimensions.max <= 0) {
-                throw new IllegalArgumentException("\"rangeDimensions.max\" MUST be a safe integer greater than 0 (zero)", "extra.rangeDimensions.max", {value: extra.rangeDimensions.max})
+                throw new IllegalArgumentException("\"rangeDimensions.max\" MUST be a safe integer greater than 0 (zero)", "extra.rangeDimensions.max", {value: extra.rangeDimensions.max});
             }
         }
 

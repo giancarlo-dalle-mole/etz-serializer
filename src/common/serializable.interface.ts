@@ -1,4 +1,4 @@
-import { JsonWriter } from "../services/json-writer";
+import { JsonReader, JsonWriter } from "../services";
 import { Json } from "./json.type";
 
 /**
@@ -16,29 +16,12 @@ export interface ISerializable<T> {
 
     /**
      * This method is responsible for customizing the deserialization of the object, restoring it to
-     * the original state with the correct prototype. You MAY use this methods in two different ways:
-     * changing de default or creating a brand new object from ``json``. In all cases you must return
-     * the restored object (``T``).
-     *
-     * ###
-     * ### Generic Types:
-     * - ``T``: (optional) The restored object type. MUST be the class itself or not set (inferred).
-     *
-     * @param json The raw JSON object being deserialized. The object is an instance of Object with
-     *        {@link #Json Json<T>} format.
+     * the original state with the correct prototype.
      */
-    readJson(json: Json<T>): void;
+    readJson(jsonReader: JsonReader<T>): void;
     /**
      * This method is responsible for customizing the serialization of the object, generating a
-     * {@link #Json Json<T>} version that can be converted into JSON. You MAY use this methods in two
-     * different ways: changing de default or creating a brand new object from ``instance``. In all
-     * cases you must return the serialized object ({@link  #Json Json<T>}).
-     *
-     * ###
-     * ### Generic Types:
-     * - ``T``: (optional) The restored object type. MUST be the class itself or not set (inferred).
-     *
-     * @returns The serialized object as an instance of {@link Object} in {@link #Json Json<T>} format.
+     * {@link #Json Json<T>} version that can be converted into JSON.
      */
-    writeJson(serializerOutput: JsonWriter<T>): void;
+    writeJson(jsonWriter: JsonWriter<T>): void;
 }

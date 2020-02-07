@@ -1,17 +1,18 @@
 import { NotImplementedYetException } from "@enterprize/exceptions";
 
 import {
-    Class, ISerializable, ITransformer, Json, metadataKeys, NewableClass, SerializableField,
-    SerializableFieldMetadata,
-    SerializableMetadata, SerializeOptions
+    Class, ITransformer, Json, metadataKeys, NewableClass, SerializableMetadata
 } from "../common";
 import { BehaviorEnum } from "../enums";
-import { NotSerializableException } from "../exceptions";
+import {
+    NotSerializableException, TypeMismatchException, VersionMismatchException
+} from "../exceptions";
 import { DeserializationOptions } from "./deserialization-options.type";
 import { JsonMetadata } from "./json-metadata.type";
+import { JsonReader } from "./json-reader";
+import { JsonWriter } from "./json-writer";
 import { SerializationOptions } from "./serialization-options.type";
 import { SerializerConfig } from "./serializer-config.type";
-import { JsonWriter } from "./json-writer";
 import { SerializerRegistry } from "./serializer-registry";
 
 /**
@@ -32,6 +33,8 @@ export class Serializer {
     private _config: SerializerConfig;
 
     private transformersCache: Map<Class<any>, ITransformer<any, any>>;
+
+    private readonly jsonMetadataKey: string = "__enterprize:serializer:metadata" ;
     //#endregion
 
     //#region Constructor
@@ -262,11 +265,11 @@ export class Serializer {
         }
 
         // Options for the operation with defaults
-        let opOptions: SerializationOptions;
+        let optionsClone: SerializationOptions;
 
         // No options, set defaults
-        if (args[1] == null) {
-            opOptions = {
+        if (options == null) {
+            optionsClone = {
                 typeMetadata: this._config.typeMetadata,
                 objectMetadata: this._config.objectMetadata,
                 groups: null,
@@ -275,7 +278,7 @@ export class Serializer {
         }
         // With options, set defaults if not set
         else {
-            opOptions = {
+            optionsClone = {
                 typeMetadata: options.typeMetadata != null ? options.typeMetadata : this._config.typeMetadata,
                 objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
                 groups: options.groups != null ? options.groups : null,
@@ -289,8 +292,8 @@ export class Serializer {
         // Verify if the type has a transformer
         if (SerializerRegistry.hasTransformer(objectType as NewableClass)) {
 
-            const transformer: ITransformer<T|Array<T>, S, E> = SerializerRegistry.getTransformer(objectType as NewableClass);
-            return transformer.writeJson(instance, extra, this);
+            const transformer: ITransformer<T|Array<T>, S|Array<S>, E> = SerializerRegistry.getTransformer(objectType as NewableClass);
+            return transformer.writeJson(instance, extra, this, optionsClone);
         }
         // Verify if its a serializable type
         else if (Reflect.hasOwnMetadata(metadataKeys.serializable, objectType)) {
@@ -307,14 +310,14 @@ export class Serializer {
             let versions: Array<[string, number]>;
             let objectMetadata: Array<[string, any]>;
 
-            if (opOptions.typeMetadata) {
+            if (optionsClone.typeMetadata) {
                 versions = [];
             }
 
             for (let serializableMetadata of metadata) {
 
-                const serializerOutput: JsonWriter<T> = new JsonWriter<T>(
-                    this, opOptions, instance as T, serializableMetadata, json
+                const jsonWriter: JsonWriter<T> = new JsonWriter<T>(
+                    this, optionsClone, instance as T, serializableMetadata, json
                 );
 
                 // Checks and calls custom writeJson from ISerializable interface
@@ -322,15 +325,15 @@ export class Serializer {
                     Reflect.apply(
                         Reflect.get(serializableMetadata.clazz.prototype, "writeJson"),
                         instance,
-                        [serializerOutput]
+                        [jsonWriter]
                     );
                 }
                 else {
-                    serializerOutput.defaultWriteJson();
+                    jsonWriter.defaultWriteJson();
                 }
 
                 // Add the class version used
-                if (opOptions.typeMetadata) {
+                if (optionsClone.typeMetadata) {
                     versions.push([
                         `${serializableMetadata.namespace}.${serializableMetadata.name}`,
                         serializableMetadata.version
@@ -339,7 +342,7 @@ export class Serializer {
             }
 
             // If set to add instance metadata (if any)
-            if (opOptions.objectMetadata) {
+            if (optionsClone.objectMetadata) {
 
                 const instanceMetadataKeys: string[] = Reflect.getMetadataKeys(instance);
                 if (instanceMetadataKeys.length > 0) {
@@ -361,7 +364,7 @@ export class Serializer {
                     versions: versions,
                     objectMetadata: objectMetadata
                 };
-                Reflect.set(json, "__enterprize:serializer:metadata", jsonMetadata);
+                Reflect.set(json, this.jsonMetadataKey, jsonMetadata);
             }
 
             return json as any;
@@ -385,8 +388,8 @@ export class Serializer {
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public fromJson<T, S = Json<T>, E = void>(json: Json<T>, clazz?: Class,
-                                              options?: SerializationOptions, extra?: E): T;
+    public fromJson<T, S = Json<T>, E = void>(json: S, clazz?: Class,
+                                              options?: DeserializationOptions, extra?: E): T;
     /**
      * Restores a given array of json object to its original instance of class, if possible. For the
      * restoration process to work 100% for some given cases (i.e. when inheritance is involved),
@@ -401,10 +404,130 @@ export class Serializer {
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public fromJson<T, S = Json<T>, E = void>(jsons: Array<Json<T>>, clazz?: Class,
-                                              options?: SerializationOptions, extra?: E): Array<T>;
+    public fromJson<T, S = Json<T>, E = void>(jsons: Array<S>, clazz?: Class,
+                                              options?: DeserializationOptions, extra?: E): Array<T>;
     public fromJson<T, S = Json<T>, E = void>(...args: any[]): T|Array<T> {
-        throw new NotImplementedYetException();
+
+        const json: S|Array<S> = args[0];
+        const clazz: Class = args[1];
+        const options: DeserializationOptions = args[2];
+        const extra: E = args[3];
+
+        // The json is null/undefined, no need to work
+        if (json == null) {
+            return json === null ? null : undefined;
+        }
+
+        // Options for the operation with defaults
+        let optionsClone: DeserializationOptions;
+
+        // No options, set defaults
+        if (options == null) {
+            optionsClone = {
+                typeCheck: this._config.typeCheck,
+                versionMismatchBehavior: this._config.versionMismatchBehavior,
+                objectMetadata: this._config.objectMetadata,
+                groups: null,
+                excludeUngrouped: false,
+            };
+        }
+        // With options, set defaults if not set
+        else {
+            optionsClone = {
+                typeCheck: options.typeCheck != null ? options.typeCheck : this._config.typeCheck,
+                versionMismatchBehavior: options.versionMismatchBehavior != null ? options.versionMismatchBehavior : this._config.versionMismatchBehavior,
+                objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
+                groups: options.groups != null ? options.groups : null,
+                excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : false
+            };
+        }
+
+        // Type of the instance
+        const objectType: Class = (args[0]).constructor;
+
+        // Special treatment to plain Object, need to see if has jsonMetadata set
+        if (objectType === Object && Reflect.has(json as Object, this.jsonMetadataKey)) {
+
+            const jsonMetadata: JsonMetadata = Reflect.get(json as Object, this.jsonMetadataKey);
+
+            // No versions metadata defined and no root class set
+            if (jsonMetadata.versions == null && clazz == null) {
+                // throw new NotEnoughMetadataException(json); // TODO throw a better exception saying that we could not infer the type
+                throw new NotSerializableException(json);
+            }
+
+            const metadata: Array<SerializableMetadata> = [];
+            // Obtain the class list of the prototype chain
+            for (let version of jsonMetadata.versions) {
+
+                const clazz: Class = SerializerRegistry.getType(version[0]);
+                const serializableMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, clazz);
+
+                // Checks class version used
+                if (optionsClone.versionMismatchBehavior !== BehaviorEnum.IGNORE &&
+                    serializableMetadata.version != version[1]) {
+
+                    if (optionsClone.versionMismatchBehavior === BehaviorEnum.WARNING) {
+                        console.warn(new VersionMismatchException(json, version[0], serializableMetadata.version, version[1]));
+                    }
+                    else {
+                        throw new VersionMismatchException(json, version[0], serializableMetadata.version, version[1]);
+                    }
+                }
+
+                metadata.push(serializableMetadata);
+            }
+
+            const instance: T = Reflect.construct(metadata[metadata.length - 1].clazz, []);
+
+            for (let serializableMetadata of metadata) {
+
+                const jsonReader: JsonReader<T> = new JsonReader<T>(
+                    this, optionsClone, instance as T, serializableMetadata, json as Json<T>
+                );
+
+                // Checks and calls custom writeJson from ISerializable interface
+                if (serializableMetadata.clazz.prototype.hasOwnProperty("readJson")) {
+                    Reflect.apply(
+                        Reflect.get(serializableMetadata.clazz.prototype, "readJson"),
+                        instance,
+                        [jsonReader]
+                    );
+                }
+                else {
+                    jsonReader.defaultReadJson();
+                }
+            }
+
+            // If set to apply object metadata
+            if (optionsClone.objectMetadata && jsonMetadata.objectMetadata != null &&
+                jsonMetadata.objectMetadata.length > 0) {
+                for (let objectMetadata of jsonMetadata.objectMetadata) {
+                    Reflect.defineMetadata(objectMetadata[0], objectMetadata[1], instance);
+                }
+            }
+
+            return instance;
+        }
+        // Verify if the type has a transformer
+        else if ((clazz != null && SerializerRegistry.hasTransformer(clazz as NewableClass)) ||
+                 SerializerRegistry.hasTransformer(objectType as NewableClass)) {
+
+            let transformer: ITransformer<T|Array<T>, S|Array<S>, E>;
+
+            if (clazz != null) {
+                transformer = SerializerRegistry.getTransformer(clazz as NewableClass);
+            }
+            else {
+                transformer = SerializerRegistry.getTransformer(objectType as NewableClass);
+            }
+
+            return transformer.readJson(json, extra, this, optionsClone);
+        }
+        // Unknown Type
+        else {
+            throw new NotSerializableException(json);
+        }
     }
     //#endregion
 
@@ -418,6 +541,15 @@ export class Serializer {
         config.versionMismatchBehavior = config.versionMismatchBehavior != null ? config.versionMismatchBehavior : BehaviorEnum.ERROR;
 
         this._config = Object.freeze(config);
+    }
+
+    private checkType(value: any, expected: Class, actual: Class, metadata: SerializableMetadata): boolean {
+
+        if (actual != expected) {
+            throw new TypeMismatchException(value, expected, actual);
+        }
+
+        return true;
     }
     //#endregion
 }

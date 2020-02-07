@@ -113,6 +113,37 @@ export class SerializerRegistry {
     }
 
     /**
+     * Gets a registered serializable type based on a fully qualified name.
+     * @param fqn The fully qualified name
+     * @returns The {@link Class} of the given fully qualified name.
+     *
+     * @throws Error - Type not found.
+     */
+    public static getType(fqn: string): Class {
+
+        const namespaceSplit: Array<string> = fqn.split(".");
+        let namespace: RegisteredTypesMap|Class = this.namespacesRegistry;
+
+        let pointer: number = 0;
+        while (pointer < namespaceSplit.length) {
+
+            if (namespace.has(namespaceSplit[pointer])) {
+                namespace = namespace.get(namespaceSplit[pointer]);
+                if (!(namespace instanceof Map)) {
+                    return namespace as Class;
+                }
+            }
+            else {
+                break;
+            }
+
+            pointer++;
+        }
+
+        throw new Error(); // TODO better exception, type not found
+    }
+
+    /**
      * Gets the list of registered type transformers.
      * @return A {@link Map} of the registered transformers organized by class.
      */

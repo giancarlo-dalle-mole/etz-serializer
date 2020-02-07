@@ -1,6 +1,9 @@
 import { InstantiationPolicyEnum } from "./common";
 import { SerializerRegistry } from "./services";
-import { ArrayTransformer, BooleanTransformer, MapTransformer, StringTransformer } from "./transformers";
+import {
+    ArrayTransformer, BooleanTransformer, DateTransformer, MapTransformer, NumberTransformer,
+    ObjectTransformer, SetTransformer, StringTransformer
+} from "./transformers";
 
 /**
  * Configure some package aspects.
@@ -23,8 +26,28 @@ SerializerRegistry.addTransformer(
     {instantiationPolicy: InstantiationPolicyEnum.SINGLETON}
 );
 SerializerRegistry.addTransformer(
+    DateTransformer,
+    Date,
+    {instantiationPolicy: InstantiationPolicyEnum.SINGLETON}
+);
+SerializerRegistry.addTransformer(
     MapTransformer,
     Map,
+    {instantiationPolicy: InstantiationPolicyEnum.SINGLETON}
+);
+SerializerRegistry.addTransformer(
+    NumberTransformer,
+    Number,
+    {instantiationPolicy: InstantiationPolicyEnum.SINGLETON}
+);
+SerializerRegistry.addTransformer(
+    ObjectTransformer,
+    Object,
+    {instantiationPolicy: InstantiationPolicyEnum.SINGLETON}
+);
+SerializerRegistry.addTransformer(
+    SetTransformer,
+    Set,
     {instantiationPolicy: InstantiationPolicyEnum.SINGLETON}
 );
 SerializerRegistry.addTransformer(

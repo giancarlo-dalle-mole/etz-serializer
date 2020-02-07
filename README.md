@@ -1,4 +1,4 @@
-# Enterprize Serializer (etz-serializer)
+# Enterprize Serializer
 Custom classes and native TypeScript/JavaScript classes serialization and deserialization with metadata into JSON compliant standard.
 
 # :warning: IN PROGRESSS, DO NOT USE YET! :warning:
@@ -59,7 +59,7 @@ This section describes the internal rules and design decisions used in this libr
 * ``NaN`` values are serialized as ``"NaN"`` string. (JavaScript ``JSON`` uses ``null``);
 * ``-Infinity``/``Infinity`` are serialized as ``"-Infinity"`` and ``"Infinity"`` strings. (JavaScript ``JSON`` uses ``null``);
 * ``Map`` objects are serialized as tuples <K,V> (eg.: ``[[1, "A"], [2, "B"], [3, {prop: "bar"}]]``). (JavaScript ``JSON`` does not serialize ``Map`` objects, resulting in empty objects - ``{}``);
-* ``Set`` objects are serialized as arrays ``[key, value]`` (e.g.: ``[[1, "A"], [2, "B"], [3, {prop: "bar"}]]``). (JavaScript ``JSON`` does not serialize ``Map`` objects, resulting in empty objects - ``{}``);
+* ``Set`` objects are serialized as arrays ``[key, value]`` (e.g.: ``[[1, "A"], [2, "B"], [3, {prop: "bar"}]]``). (JavaScript ``JSON`` does not serialize ``Set`` objects, resulting in empty objects - ``{}``);
 
 ## Other Rules
 
@@ -445,43 +445,29 @@ Generic types:
 
 Default ``Array`` transformer.
 
-Decorated with: [``@Transformer``](#transformert--any-s--any)
-
 ### ``BooleanTransformer implements ITransformer<Boolean|boolean, boolean>``
 
 Default ``Boolean`` transformer.
-
-Decorated with: [``@Transformer``](#transformert--any-s--any)
 
 ### ``MapTransformer implements ITransformer<Map<any, any>, Array<[any, any]>>``
 
 Default ``Map`` transformer.
 
-Decorated with: [``@Transformer``](#transformert--any-s--any)
-
 ### ``NumberTransformer implements ITransformer<Number|number, number>``
 
 Default ``Number`` transformer.
-
-Decorated with: [``@Transformer``](#transformert--any-s--any)
 
 ### ``ObjectTransformer implements ITransformer<Object, Json<Object>>``
 
 Default ``Object`` transformer.
 
-Decorated with: [``@Transformer``](#transformert--any-s--any)
-
 ### ``SetTransformer implements ITransformer<Set<any>, Array<any>>``
 
 Default ``Set`` transformer.
 
-Decorated with: [``@Transformer``](#transformert--any-s--any)
-
 ### ``StringTransformer implements ITransformer<String|string, string>``
 
 Default ``String`` transformer.
-
-Decorated with: [``@Transformer``](#transformert--any-s--any)
 
 ## Exceptions
 

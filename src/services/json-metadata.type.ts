@@ -10,8 +10,8 @@ export type JsonMetadata = {
 
     /**
      * Array of tuples with fully qualified name (i.e. namespace plus names separated by "." - dots)
-     * with the class versions used to serialize the object. The order is from bottom to up in the
-     * inheritance hierarchy (e.g. [C, B, A] in a C extends B, B extends A inheritance chain).
+     * with the class versions used to serialize the object. The order is from TOP to BOTTOM in the
+     * inheritance hierarchy (e.g. [A, B, C] in a C extends B, B extends A inheritance chain).
      */
     versions?: Array<[string, number]>;
     /**

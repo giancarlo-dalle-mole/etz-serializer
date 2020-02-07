@@ -1,4 +1,5 @@
 import { Json, SerializableMetadata } from "../common";
+import { TypesEnum } from "../enums";
 import { DeserializationOptions } from "./deserialization-options.type";
 import { Serializer } from "./serializer";
 
@@ -39,9 +40,17 @@ export class JsonReader<T extends Object> {
 
         for (let fieldMetadata of this.metadata.serializableFields) {
 
-            // const field: any = Reflect.get(this.instance, fieldMetadata.name);
-            // const serializedField: any = this.serializer.fromJson(field, this.options, fieldMetadata.extra)<any>;
-            // Reflect.set(this._json, fieldMetadata.name, serializedField);
+            const field: any = Reflect.get(this._json, fieldMetadata.name);
+            let deserializedField: any;
+
+            if (fieldMetadata.type === TypesEnum.ANY) {
+                deserializedField = this.serializer.fromJson(field, null, this.options, fieldMetadata.extra);
+            }
+            else {
+                deserializedField = this.serializer.fromJson(field, fieldMetadata.type, this.options, fieldMetadata.extra);
+            }
+
+            Reflect.set(this.instance, fieldMetadata.name, deserializedField);
         }
     }
 

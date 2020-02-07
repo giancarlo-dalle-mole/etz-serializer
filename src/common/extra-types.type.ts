@@ -1,4 +1,6 @@
-import { ArrayExtra, BooleanExtra, MapExtra, StringExtra } from "../transformers";
+import {
+    ArrayExtra, BooleanExtra, MapExtra, NumberExtra, SetExtra, StringExtra
+} from "../transformers";
 
 /**
  * Type alias for all the extra data that all the built-in transformers accept.
@@ -7,4 +9,4 @@ import { ArrayExtra, BooleanExtra, MapExtra, StringExtra } from "../transformers
  * @author Giancarlo Dalle Mole
  * @since 24/01/2020
  */
-export type ExtraTypes = ArrayExtra|BooleanExtra|MapExtra|StringExtra;
+export type ExtraTypes = ArrayExtra|BooleanExtra|MapExtra|NumberExtra|SetExtra|StringExtra;
