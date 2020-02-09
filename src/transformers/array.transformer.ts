@@ -1,24 +1,115 @@
 import { IllegalArgumentException } from "@enterprize/exceptions";
 
-import { Class, ITransformer } from "../common";
+import { Class, ExtraTypes, ITransformer } from "../common";
 import { TypesEnum } from "../enums";
 import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
 
+/**
+ * Transformer for {@link Array} objects. Intended to be used as a
+ * {@link #InstantiationPolicyEnum.SINGLETON SINGLETON}.
+ *
+ * @version 1.0.0
+ * @author Giancarlo Dalle Mole
+ * @since 09/02/2020
+ */
 export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, ArrayExtra> {
 
+    //#region Constructor
     constructor() {
     }
+    //#endregion
 
+    //#region ITransformer Methods
+    /**
+     * @inheritDoc
+     */
     public readJson(json: Array<any>, extra?: ArrayExtra, serializer?: Serializer,
                     options?: DeserializationOptions): Array<any> {
-        return undefined;
+
+        if (json == null) {
+            return json === null ? null : undefined;
+        }
+
+        ArrayTransformer.validateExtra(extra);
+
+        if (extra == null) {
+
+            extra = {
+                itemType: () => TypesEnum.ANY,
+                dimensions: ArrayDimensionsEnum.ONE_DIMENSIONAL
+            };
+        }
+        else {
+            extra.itemType = () => TypesEnum.ANY;
+            extra.dimensions = extra.dimensions != null ? extra.dimensions : ArrayDimensionsEnum.ONE_DIMENSIONAL;
+        }
+
+        if (extra.dimensions != null && extra.dimensions !== ArrayDimensionsEnum.ANY_DIMENSIONAL) {
+
+            //TODO refactor to accept N number of dimensions
+
+            switch (extra.dimensions) {
+                case ArrayDimensionsEnum.ONE_DIMENSIONAL:
+                    if (Array.isArray(json[0])) {
+                        throw new Error("ArrayDimensionsOutOfRange"); // TODO use a custom exception
+                    }
+                    break;
+                case ArrayDimensionsEnum.TWO_DIMENSIONAL:
+                    if (!(Array.isArray(json[0]) && !Array.isArray(json[0][0]))) {
+                        throw new Error("ArrayDimensionsOutOfRange");
+                    }
+                    break;
+                case ArrayDimensionsEnum.THREE_DIMENSIONAL:
+                    if (!(Array.isArray(json[0]) && Array.isArray(json[0][0]) &&
+                        !Array.isArray(json[0][0][0]))) {
+                        throw new Error("ArrayDimensionsOutOfRange");
+                    }
+                    break;
+            }
+        }
+
+        const array: Array<any> = [];
+        for (let item of json) {
+
+            if (!Array.isArray(item)) {
+
+                const itemType: Class|TypesEnum.ANY = extra?.itemType();
+                if (itemType === TypesEnum.ANY || itemType == null) {
+                    array.push(serializer.fromJson(item, null, options, extra?.itemExtra));
+                }
+                else {
+                    array.push(serializer.fromJson(item, itemType, options, extra?.itemExtra));
+                }
+            }
+            else {
+                array.push(serializer.fromJson(item, Array, options, {...extra, dimensions: extra.dimensions - 1}));
+            }
+        }
+
+        return array;
     }
 
+    /**
+     * @inheritDoc
+     */
     public writeJson(instance: Array<any>, extra?: ArrayExtra, serializer?: Serializer,
                      options?: SerializationOptions): Array<any> {
-        return undefined;
-    }
 
+        if (instance == null) {
+            return instance === null ? null : undefined;
+        }
+        else if (instance.length === 0) {
+            return [];
+        }
+
+        const jsonArray: Array<any> = [];
+        for (let item of instance) {
+            jsonArray.push(serializer.toJson(item, options));
+        }
+
+        return jsonArray;
+    }
+    //#endregion
 
     /**
      * Validates the "extra" options on {@link SerializeOptions}.
@@ -30,39 +121,26 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
 
         // No extra, defaults will be used.
         if (extra == null) {
-            return  true;
-        }
-
-        if (extra.dimensions != null && extra.rangeDimensions != null) {
-            throw new IllegalArgumentException("You SHOULD not set both \"dimensions\" and \" rangeDimensions\" at the same time", "extra", {value: extra});
+            return true;
         }
 
         // Validates the number of dimensions.
         if (extra.dimensions != null && !Number.isSafeInteger(extra.dimensions) && extra.dimensions < 0) {
-            throw new IllegalArgumentException("\"dimensions\" MUST be a safe integer greater or equal than 0 (zero)", "dimensions", {value: extra.dimensions});
-        }
-
-        // if defined a range of dimensions
-        if (extra.rangeDimensions != null) {
-
-            if (extra.rangeDimensions.min > extra.rangeDimensions.max) {
-                throw new IllegalArgumentException("\"rangeDimensions.min\" must be less than \"rangeDimensions.max\"", "extra.rangeDimensions", {value: extra.rangeDimensions});
-            }
-
-            if (!Number.isSafeInteger(extra.rangeDimensions.min) && extra.rangeDimensions.min <= 0) {
-                throw new IllegalArgumentException("\"rangeDimensions.min\" MUST be a safe integer greater than 0 (zero)", "extra.rangeDimensions.min", {value: extra.rangeDimensions.min});
-            }
-
-            if (!Number.isSafeInteger(extra.rangeDimensions.max) && extra.rangeDimensions.max <= 0) {
-                throw new IllegalArgumentException("\"rangeDimensions.max\" MUST be a safe integer greater than 0 (zero)", "extra.rangeDimensions.max", {value: extra.rangeDimensions.max});
-            }
+            throw new IllegalArgumentException("\"dimensions\" must be a safe integer greater or equal than 0 (zero)", "dimensions", {value: extra.dimensions});
         }
 
         return true;
     }
 }
 
-export type ArrayExtra = {
+/**
+ * Configuration to use with {@link ArrayTransformer}.
+ *
+ * @version 1.0.0
+ * @author Giancarlo Dalle Mole
+ * @since 09/02/2020
+ */
+export type ArrayExtra<E = void> = {
 
     /**
      * (optional) The type of the elements of the array.
@@ -70,26 +148,15 @@ export type ArrayExtra = {
      */
      itemType?: () => Class|TypesEnum;
     /**
+     * Extra options to pass to item transformer (if required).
+     */
+    itemExtra?: E|ExtraTypes;
+    /**
      * (optional) Defines the number of dimensions of the array. Set this property to an {@link ArrayDimensionsEnum}
      * value or any natural number (N, integer greater or equal than 0) to customize the number of dimensions.
      * @default {@link ArrayDimensionsEnum.ONE_DIMENSIONAL}
      */
     dimensions?: ArrayDimensionsEnum|number;
-    /**
-     * (optional) Defines a range of number of dimensions of the array. Invalidates any {@link dimensions}
-     * set previously.
-     */
-    rangeDimensions?: {
-        /**
-         * Minimum number of dimensions. MUST be less than max and a non zero natural number (N*).
-         */
-        min: ArrayDimensionsEnum|number;
-        /**
-         * Maximum number of dimensions. Must be greater than {@link min} and a non zero natural number
-         * (N*).
-         */
-        max: ArrayDimensionsEnum|number;
-    }
 }
 
 export enum ArrayDimensionsEnum {

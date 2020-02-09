@@ -31,8 +31,8 @@ export class SetTransformer implements ITransformer<Set<any>, Array<any>, SetExt
         const set: Set<any> = new Set<any>();
         for (let item of json) {
 
-            const itemType: Class|TypesEnum.ANY = extra.itemType();
-            if (itemType === TypesEnum.ANY) {
+            const itemType: Class|TypesEnum.ANY = extra?.itemType();
+            if (itemType === TypesEnum.ANY || itemType == null) {
                 set.add(serializer.fromJson(item, null, options, extra.itemExtra));
             }
             else {
@@ -55,7 +55,7 @@ export class SetTransformer implements ITransformer<Set<any>, Array<any>, SetExt
 
         const setArray: Array<any> = [];
         for (let item of instance) {
-            setArray.push(serializer.toJson(item, options, extra.itemExtra));
+            setArray.push(serializer.toJson(item, options, extra?.itemExtra));
         }
 
         return setArray;

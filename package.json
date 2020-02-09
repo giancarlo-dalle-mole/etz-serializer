@@ -27,7 +27,7 @@
     "scripts": {
         "compile": "tsc --watch",
         "dev": "nodemon --watch ./dist --delay 5 -r source-map-support/register ./dist/index.js",
-        "test_dev": "nodemon --exec ts-node --watch ./test --watch ./src --delay 5 -r source-map-support/register ./test/index.ts"
+        "test_dev": "ts-node -r source-map-support/register ./test/index.ts"
     },
     "dependencies": {
         "@enterprize/exceptions": "^1.0.2"
