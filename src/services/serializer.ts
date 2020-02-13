@@ -65,33 +65,45 @@ export class Serializer {
      * ###
      * Generic Types:
      * - ``T``: (optional) The type of the object. Default: inferred.
+     * - ``E``: (optional) The type of the extra. Default: void.
+     *
      * @param instance The object to be clone.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @return A deep clone of the object.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
+     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
+     *         must be passed but none was given (see {@link #Serialize @Serialize} or
+     *         {@link SerializerRegistry.addType}).
+     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
+     *         for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
      * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
      */
-    public clone<T extends Object>(instance: T): T;
+    public clone<T extends Object, E = void>(instance: T, extra?: E): T;
     /**
-     * Performs a deep clone of the object.
+     * Performs a deep clone of the object. Also clones any metadata defined with {@link Reflect} library.
      * ###
      * Generic Types:
      * - ``T``: (optional) The type of the object. Default: inferred.
+     * - ``E``: (optional) The type of the extra. Default: void.
+     *
      * @param instances An array of objects to be cloned.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @return A deep clone of the array of objects.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
+     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
+     *         must be passed but none was given (see {@link #Serialize @Serialize} or
+     *         {@link SerializerRegistry.addType}).
+     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
+     *         for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
      * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
      */
-    public clone<T extends Object>(instances: Array<T>): Array<T>;
-    public clone<T extends Object>(...args: [T]|[Array<T>]): T|Array<T> {
-        throw new NotImplementedYetException();
+    public clone<T extends Object, E = void>(instances: Array<T>, extra?: E): Array<T>;
+    public clone<T extends Object>(...args: any[]): T|Array<T> {
+        return this.fromJson(this.toJson(args[0], null, args[1]), null, null, args[1]);
     }
 
     /**
@@ -99,60 +111,44 @@ export class Serializer {
      * ###
      * Generic Types:
      * - ``T``: (optional) The type of the object. Default: inferred.
-     * @param instance The object to be serialized.
-     * @returns A JSON string of the object.
+     * - ``E``: (optional) The type of the extra. Default: void.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public serialize<T extends Object>(instance: T): string;
-    /**
-     * Serializes an object into a JSON string.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * @param instance The object to be serialized.
+     * @param instance The instance to be converted to {@link Json}.
      * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns A JSON string of the object.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
+     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
+     *         must be passed but none was given (see {@link #Serialize @Serialize} or
+     *         {@link SerializerRegistry.addType}).
+     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
+     *         for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public serialize<T extends Object>(instance: T, options: SerializationOptions): string;
+    public serialize<T extends Object, E = void>(instance: T, options?: SerializationOptions, extra?: E): string;
     /**
      * Serializes an array of objects into a JSON string.
      * ###
      * Generic Types:
      * - ``T``: (optional) The type of the object. Default: inferred.
-     * @param instances The objects to be serialized.
-     * @returns A JSON string of the objects.
+     * - ``E``: (optional) The type of the extra. Default: void.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     */
-    public serialize<T extends Object>(instances: Array<T>): string;
-    /**
-     * Serializes an array of objects into a JSON string.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
      * @param instances The objects to be serialized.
      * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns A JSON string of the objects.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
+     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
+     *         must be passed but none was given (see {@link #Serialize @Serialize} or
+     *         {@link SerializerRegistry.addType}).
+     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
+     *         for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
-    public serialize<T extends Object>(instances: Array<T>, options: SerializationOptions): string;
-    public serialize<T extends Object>(...args: [T]|
-                                                [T, SerializationOptions]|
-                                                [Array<T>]|
-                                                [Array<T>, SerializationOptions]): string {
-        throw new NotImplementedYetException();
+    public serialize<T extends Object, E = void>(instances: Array<T>, options?: SerializationOptions,
+                                                 extra?: E): string;
+    public serialize<T extends Object>(...args: any[]): string {
+        return JSON.stringify(this.toJson(args[0], args[1], args[2]));
     }
 
     /**
@@ -160,23 +156,12 @@ export class Serializer {
      * ###
      * Generic Types:
      * - ``T``: (optional) The type of the object. Default: inferred.
-     * @param json The JSON string to be deserialized
-     * @returns The recovered object instance with correct prototype.
+     * - ``E``: (optional) The type of the extra. Default: void.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
-     * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
-     */
-    public deserialize<T extends Object>(json: string): T;
-    /**
-     * Deserializes a JSON string into T.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
      * @param json The JSON string to be deserialized
+     * @param clazz (optional) The class to be used as a root type or for type checking.
      * @param options (optional) Operation options. Override global {@link config}.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns The recovered object instance with correct prototype.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
@@ -185,32 +170,20 @@ export class Serializer {
      * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
      * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
      */
-    public deserialize<T extends Object>(json: string, options: DeserializationOptions): T;
+    public deserialize<T extends Object, E = void>(json: string, clazz?: Class, options?: DeserializationOptions,
+                                                   extra?: E): T;
     /**
      * Deserializes a JSON string into T by using ``clazz`` as root type or type checking.
      * ###
      * Generic Types:
      * - ``T``: (optional) The type of the object. Default: inferred.
-     * @param json The JSON string to be deserialized
-     * @param clazz The class to be used as root type or type checking.
-     * @returns The recovered object instance with correct prototype.
+     * - ``E``: (optional) The type of the extra. Default: void.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
-     * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
-     */
-    public deserialize<T extends Object>(json: string, clazz: Class<T>): T;
-    /**
-     * Deserializes a JSON string into T by using ``clazz`` as root type or type checking.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
      * @param json The JSON string to be deserialized
-     * @param clazz The class to be used as root type or type checking.
+     * @param clazz (optional) The class to be used as a root type or for type checking.
      * @param options (optional) Operation options. Override global {@link config}.
-     * @returns The recovered object instance with correct prototype.
+     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
+     * @returns The recovered object array instances with correct prototype.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
      * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
@@ -218,12 +191,10 @@ export class Serializer {
      * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
      * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
      */
-    public deserialize<T extends Object>(json: string, clazz: Class<T>, options: DeserializationOptions): T;
-    public deserialize<T extends Object>(...args: [string]|
-                                                  [string, DeserializationOptions]|
-                                                  [string, Class<T>]|
-                                                  [string, Class<T>, DeserializationOptions]): T {
-        throw new NotImplementedYetException();
+    public deserialize<T extends Object, E = void>(json: string, clazz?: Class, options?: DeserializationOptions,
+                                                   extra?: E): Array<T>;
+    public deserialize<T extends Object>(...args: any[]): T {
+        return this.fromJson(JSON.parse(args[0]), args[1], args[2], args[3]);
     }
 
     /**
@@ -234,12 +205,14 @@ export class Serializer {
      * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns A {@link Json} of the object with the required metadata set.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
+     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
+     *         must be passed but none was given (see {@link #Serialize @Serialize} or
+     *         {@link SerializerRegistry.addType}).
+     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
+     *         for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
     public toJson<T, S = Json<T>, E = void>(instance: T, options?: SerializationOptions, extra?: E): S;
-
     /**
      * Converts a given array of instances of a class to its "json object" version, including, if
      * configured, the necessary metadata to convert it back to a instance of the class.
@@ -248,8 +221,11 @@ export class Serializer {
      * @param extra (optional) Extra data to pass to transformer if the root object requires it.
      * @returns A {@link Json} of the object with the required metadata set.
      *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
+     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
+     *         must be passed but none was given (see {@link #Serialize @Serialize} or
+     *         {@link SerializerRegistry.addType}).
+     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
+     *         for a given transformer.
      * @throws {@link NotSerializableException} - When a not serializable type is received.
      */
     public toJson<T, S = Json<T>, E = void>(instances: Array<T>, options?: SerializationOptions, extra?: E): Array<S>;

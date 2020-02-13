@@ -85,79 +85,8 @@ class Point3D extends Point2D {
     }
 }
 
-const points2DMatrix: Array<Array<Point2D>> = [];
-for (let i: number = 0; i < 5; i++) {
-
-    const points2D: Array<Point2D> = [];
-    for (let k: number = 0; k < 3; k++) {
-        const point: Point2D = new Point2D(i, k);
-        points2D.push(point);
-    }
-
-    points2DMatrix.push(points2D);
-}
-
-const points2DMatrixJson: Array<Array<Json<Point2D>>> = serializer.toJson(points2DMatrix);
-const points2DMatrixRestored: Array<Array<Point2D>> = serializer.fromJson(points2DMatrixJson, Array, null, {itemType: () => Point2D, dimensions: ArrayDimensionsEnum.TWO_DIMENSIONAL});
+const point3d: Point3D = new Point3D(10, 12, 25);
+const pont3dClone: Point3D = serializer.clone(point3d);
 
 
-@Serializable({name: "Pointer", namespace: "Points", version: 1})
-class Pointer {
-
-    @Serialize({extra: {itemType: () => Point2D, dimensions: ArrayDimensionsEnum.TWO_DIMENSIONAL}})
-    public points: Array<Array<Point2D>>;
-}
-
-const pointer: Pointer = new Pointer();
-pointer.points = [];
-for (let i: number = 0; i < 1000; i++) {
-    const points: Array<Point2D> = [];
-    // 2d
-    if (i % 2 === 0) {
-        for (let k: number = 1; k < 1001; k++) {
-            // 2d
-            if (k % 2 === 0) {
-                const point: Point2D = new Point2D(i, k-1);
-                points.push(point);
-            }
-            else {
-                const point: Point3D = new Point3D(i, k-1, i + (k-1));
-                points.push(point);
-            }
-        }
-    }
-    // 3d
-    else {
-        for (let k: number = 0; k < 1000; k++) {
-            // 2d
-            if (k % 2 === 0) {
-                const point: Point2D = new Point2D(i, k);
-                points.push(point);
-            }
-            else {
-                const point: Point3D = new Point3D(i, k, i + k);
-                points.push(point);
-            }
-        }
-    }
-
-    pointer.points.push(points);
-}
-
-let start: number;
-let end: number;
-
-console.log("---------- Serialized");
-start = Date.now();
-const serializedPointer: Json<Pointer> = serializer.toJson(pointer);
-end = Date.now();
-console.log("Serialization Time", end - start);
-// console.log(JSON.stringify(serializedPointer, null, "  "));
-
-console.log("---------- Deserialized");
-start = Date.now();
-const deserializedPointer: Pointer = serializer.fromJson(serializedPointer, Pointer);
-end = Date.now();
-console.log("Deserialization Time", end - start);
-
-console.log("--- DONE ---");
+console.log("DONE");
