@@ -1,5 +1,4 @@
-import { ITransformer } from "../common";
-import { Serializer } from "../services";
+import { DeserializationContext, ITransformer, SerializationContext } from "../common";
 
 /**
  * Transformer for boolean primitives and {@link Boolean} Wrappers. Intended to be used as a
@@ -20,7 +19,7 @@ export class BooleanTransformer implements ITransformer<boolean|Boolean, boolean
     /**
      * @inheritDoc
      */
-    public readJson(json: boolean, extra?: BooleanExtra, serializer?: Serializer): boolean|Boolean {
+    public readJson(json: boolean, extra?: BooleanExtra, context?: DeserializationContext): boolean|Boolean {
 
         if (json == null) {
             return json === null ? null : undefined;
@@ -38,7 +37,7 @@ export class BooleanTransformer implements ITransformer<boolean|Boolean, boolean
     /**
      * @inheritDoc
      */
-    public writeJson(instance: boolean|Boolean, extra?: BooleanExtra, serializer?: Serializer): boolean {
+    public writeJson(instance: boolean|Boolean, extra?: BooleanExtra, context?: SerializationContext): boolean {
 
         if (instance == null) {
             return instance === null ? null : undefined;

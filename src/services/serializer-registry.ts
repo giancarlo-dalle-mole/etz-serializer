@@ -71,7 +71,7 @@ export class SerializerRegistry {
         for (let serializableField of serializableFields) {
 
             const fieldInfo: SerializableFieldMetadata = new SerializableFieldMetadata<any>(
-                serializableField.name,
+                serializableField.name as string,
                 serializableField.type,
                 serializableField.groups,
                 serializableField.extra

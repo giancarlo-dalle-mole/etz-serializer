@@ -1,6 +1,7 @@
-import { Json, SerializableMetadata } from "../common";
+import { Json, SerializableMetadata, SerializationContext } from "../common";
 import { SerializationOptions } from "./serialization-options.type";
 import { Serializer } from "./serializer";
+import { ISerializer } from "./serializer.interface";
 
 /**
  *
@@ -8,13 +9,9 @@ import { Serializer } from "./serializer";
 export class JsonWriter<T extends Object> {
 
     /**
-     * The serializer service used.
+     * The serialization context.
      */
-    private readonly serializer: Serializer;
-    /**
-     * Options of the serialization process.
-     */
-    private readonly options: SerializationOptions;
+    private readonly context: SerializationContext;
     /**
      * The instance being deserialized.
      */
@@ -28,11 +25,10 @@ export class JsonWriter<T extends Object> {
      */
     private readonly _json: Json<T>;
 
-    constructor(serializer: Serializer, options: SerializationOptions, instance: T,
+    constructor(context: SerializationContext, instance: T,
                 metadata: SerializableMetadata, json: Json<T>) {
 
-        this.serializer = serializer;
-        this.options = options;
+        this.context = context;
         this.instance = instance;
         this.metadata = metadata;
         this._json = json;
@@ -42,8 +38,10 @@ export class JsonWriter<T extends Object> {
 
         for (let fieldMetadata of this.metadata.serializableFields) {
 
+            const childContext: SerializationContext = this.context.child(fieldMetadata.name);
+
             const field: any = Reflect.get(this.instance, fieldMetadata.name);
-            const serializedField: any = this.serializer.toJson(field, this.options, fieldMetadata.extra);
+            const serializedField: any = childContext.serializer.toJson(field, null, fieldMetadata.extra, childContext);
             Reflect.set(this._json, fieldMetadata.name, serializedField);
         }
     }

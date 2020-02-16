@@ -1,19 +1,20 @@
-import { NotImplementedYetException } from "@enterprize/exceptions";
-
 import {
-    Class, ITransformer, Json, metadataKeys, NewableClass, SerializableMetadata
+    Class, DeserializationContext, ITransformer, Json, metadataKeys, NewableClass,
+    SerializableMetadata, SerializationContext
 } from "../common";
 import { BehaviorEnum } from "../enums";
 import {
     NotSerializableException, TypeMismatchException, VersionMismatchException
 } from "../exceptions";
 import { DeserializationOptions } from "./deserialization-options.type";
-import { JsonMetadata } from "./json-metadata.type";
+import { JsonMetadata } from "../common/json-metadata.type";
+import { JsonPointerEncoder } from "./json-pointer-encoder";
 import { JsonReader } from "./json-reader";
 import { JsonWriter } from "./json-writer";
 import { SerializationOptions } from "./serialization-options.type";
 import { SerializerConfig } from "./serializer-config.type";
 import { SerializerRegistry } from "./serializer-registry";
+import { ISerializer } from "./serializer.interface";
 
 /**
  * The service that performs serialization and deserialization process. Can be configured globally or
@@ -24,7 +25,7 @@ import { SerializerRegistry } from "./serializer-registry";
  * @author Giancarlo Dalle Mole
  * @since 27/01/2020
  */
-export class Serializer {
+export class Serializer implements ISerializer {
 
     //#region Private Attributes
     /**
@@ -32,16 +33,13 @@ export class Serializer {
      */
     private _config: SerializerConfig;
 
-    private transformersCache: Map<Class<any>, ITransformer<any, any>>;
-
-    private readonly jsonMetadataKey: string = "__enterprize:serializer:metadata" ;
+    private readonly jsonMetadataKey: string = "__enterprize:serializer:metadata";
     //#endregion
 
     //#region Constructor
     constructor(config?: SerializerConfig) {
 
         this.setConfig(config);
-        this.transformersCache = new Map<Class<any>, ITransformer<any, any>>();
     }
     //#endregion
 
@@ -61,45 +59,11 @@ export class Serializer {
 
     //#region Public Methods
     /**
-     * Performs a deep clone of the object.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * - ``E``: (optional) The type of the extra. Default: void.
-     *
-     * @param instance The object to be clone.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @return A deep clone of the object.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
-     *         must be passed but none was given (see {@link #Serialize @Serialize} or
-     *         {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
-     *         for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
-     * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
+     * @inheritDoc
      */
     public clone<T extends Object, E = void>(instance: T, extra?: E): T;
     /**
-     * Performs a deep clone of the object. Also clones any metadata defined with {@link Reflect} library.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * - ``E``: (optional) The type of the extra. Default: void.
-     *
-     * @param instances An array of objects to be cloned.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @return A deep clone of the array of objects.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
-     *         must be passed but none was given (see {@link #Serialize @Serialize} or
-     *         {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
-     *         for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
-     * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
+     * @inheritDoc
      */
     public clone<T extends Object, E = void>(instances: Array<T>, extra?: E): Array<T>;
     public clone<T extends Object>(...args: any[]): T|Array<T> {
@@ -107,43 +71,11 @@ export class Serializer {
     }
 
     /**
-     * Serializes an object into a JSON string.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * - ``E``: (optional) The type of the extra. Default: void.
-     *
-     * @param instance The instance to be converted to {@link Json}.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns A JSON string of the object.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
-     *         must be passed but none was given (see {@link #Serialize @Serialize} or
-     *         {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
-     *         for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
+     * @inheritDoc
      */
     public serialize<T extends Object, E = void>(instance: T, options?: SerializationOptions, extra?: E): string;
     /**
-     * Serializes an array of objects into a JSON string.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * - ``E``: (optional) The type of the extra. Default: void.
-     *
-     * @param instances The objects to be serialized.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns A JSON string of the objects.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
-     *         must be passed but none was given (see {@link #Serialize @Serialize} or
-     *         {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
-     *         for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
+     * @inheritDoc
      */
     public serialize<T extends Object, E = void>(instances: Array<T>, options?: SerializationOptions,
                                                  extra?: E): string;
@@ -152,124 +84,106 @@ export class Serializer {
     }
 
     /**
-     * Deserializes a JSON string into T.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * - ``E``: (optional) The type of the extra. Default: void.
-     *
-     * @param json The JSON string to be deserialized
-     * @param clazz (optional) The class to be used as a root type or for type checking.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns The recovered object instance with correct prototype.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
-     * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
+     * @inheritDoc
      */
     public deserialize<T extends Object, E = void>(json: string, clazz?: Class, options?: DeserializationOptions,
                                                    extra?: E): T;
     /**
-     * Deserializes a JSON string into T by using ``clazz`` as root type or type checking.
-     * ###
-     * Generic Types:
-     * - ``T``: (optional) The type of the object. Default: inferred.
-     * - ``E``: (optional) The type of the extra. Default: void.
-     *
-     * @param json The JSON string to be deserialized
-     * @param clazz (optional) The class to be used as a root type or for type checking.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns The recovered object array instances with correct prototype.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
-     * @throws {@link TypeMismatchException} - When a type is not assignable to a type.
-     * @throws {@link VersionNumberException} - When a version number of a serializable type is incompatible.
+     * @inheritDoc
      */
-    public deserialize<T extends Object, E = void>(json: string, clazz?: Class, options?: DeserializationOptions,
-                                                   extra?: E): Array<T>;
+    public deserialize<T extends Object, E = void>(json: string, clazz?: Class,
+                                                   options?: DeserializationOptions, extra?: E): Array<T>;
     public deserialize<T extends Object>(...args: any[]): T {
         return this.fromJson(JSON.parse(args[0]), args[1], args[2], args[3]);
     }
 
     /**
-     * Converts a given instance of a class to its "JSON object" version, including, if configured,
-     * the necessary metadata to convert it back to a instance of the class.
-     * @param instance The instance to be converted to {@link Json}.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns A {@link Json} of the object with the required metadata set.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
-     *         must be passed but none was given (see {@link #Serialize @Serialize} or
-     *         {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
-     *         for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
+     * @inheritDoc
      */
-    public toJson<T, S = Json<T>, E = void>(instance: T, options?: SerializationOptions, extra?: E): S;
+    public toJson<T, S = Json<T>, E = void>(instance: T, options?: SerializationOptions, extra?: E,
+                                            context?: SerializationContext): S;
     /**
-     * Converts a given array of instances of a class to its "json object" version, including, if
-     * configured, the necessary metadata to convert it back to a instance of the class.
-     * @param instances The instances array to be converted to {@link Json}.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns A {@link Json} of the object with the required metadata set.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
-     *         must be passed but none was given (see {@link #Serialize @Serialize} or
-     *         {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid
-     *         for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
+     * @inheritDoc
      */
-    public toJson<T, S = Json<T>, E = void>(instances: Array<T>, options?: SerializationOptions, extra?: E): Array<S>;
+    public toJson<T, S = Json<T>, E = void>(instances: Array<T>, options?: SerializationOptions,
+                                            extra?: E, context?: SerializationContext): Array<S>;
     public toJson<T, S = Json<T>, E = void>(...args: any[]): S|Array<S> {
 
         const instance: T|Array<T> = args[0];
-        const options: SerializationOptions = args[1];
-        const extra: E = args[2];
 
         // The instance is null/undefined, no need to work
         if (instance == null) {
             return instance === null ? null : undefined;
         }
 
-        // Options for the operation with defaults
-        let optionsClone: SerializationOptions;
+        let options: SerializationOptions = args[1];
+        let extra: E = args[2];
+        let context: SerializationContext = args[3];
 
-        // No options, set defaults
-        if (options == null) {
-            optionsClone = {
-                typeMetadata: this._config.typeMetadata,
-                objectMetadata: this._config.objectMetadata,
-                groups: null,
-                excludeUngrouped: false
-            };
+        // If no serialization context is passed, we assume this is a root operation and a new context
+        // will be created
+        if (context == null) {
+
+            // No options, set defaults
+            if (options == null) {
+                options = {
+                    typeMetadata: this._config.typeMetadata,
+                    objectMetadata: this._config.objectMetadata,
+                    groups: null,
+                    excludeUngrouped: false
+                };
+            }
+            // With options, set defaults if not set
+            else {
+                options = {
+                    typeMetadata: options.typeMetadata != null ? options.typeMetadata : this._config.typeMetadata,
+                    objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
+                    groups: options.groups != null ? [...options.groups] : null,
+                    excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : false
+                };
+            }
+
+            const objectReferenceMap: Map<Object, string> = new Map<Object, string>();
+            context = new SerializationContext(objectReferenceMap, "#", this, options);
         }
-        // With options, set defaults if not set
+        // We have a context
         else {
-            optionsClone = {
-                typeMetadata: options.typeMetadata != null ? options.typeMetadata : this._config.typeMetadata,
-                objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
-                groups: options.groups != null ? options.groups : null,
-                excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : false
-            };
+
+            // If the context already worked o that object, return its cached pointer
+            if (context.objectReferenceMap.has(instance)) {
+                return {
+                    $ref: context.objectReferenceMap.get(instance)
+                } as unknown as S;
+            }
+
+            // No options, use the context options
+            if (options == null) {
+                options = context.serializationOptions;
+            }
+            // Options were set for the operation and is descendents, set defaults if not set
+            else {
+                options = {
+                    typeMetadata: options.typeMetadata != null ? options.typeMetadata : context.serializationOptions.typeMetadata,
+                    objectMetadata: options.objectMetadata != null ? options.objectMetadata : context.serializationOptions.objectMetadata,
+                    groups: options.groups != null ? [...options.groups] : null,
+                    excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : context.serializationOptions.excludeUngrouped
+                };
+            }
         }
 
         // Type of the instance
         const objectType: Class = (args[0]).constructor;
 
+        // If the value being serialized is an Object, add it to the references
+        if (instance instanceof Object) {
+            context.objectReferenceMap.set(instance, context.pointer);
+        }
+
         // Verify if the type has a transformer
         if (SerializerRegistry.hasTransformer(objectType as NewableClass)) {
 
             const transformer: ITransformer<T|Array<T>, S|Array<S>, E> = SerializerRegistry.getTransformer(objectType as NewableClass);
-            return transformer.writeJson(instance, extra, this, optionsClone);
+            return transformer.writeJson(instance, extra, context);
         }
         // Verify if its a serializable type
         else if (Reflect.hasOwnMetadata(metadataKeys.serializable, objectType)) {
@@ -281,19 +195,19 @@ export class Serializer {
                 metadata.unshift(currentMetadata); //We use unshift to facilitate TOP - BOTTOM approach
             }
 
-            const json: Json<T> = {};
+            const json: Json<T> = {} as any;
 
             let versions: Array<[string, number]>;
             let objectMetadata: Array<[string, any]>;
 
-            if (optionsClone.typeMetadata) {
+            if (options.typeMetadata) {
                 versions = [];
             }
 
             for (let serializableMetadata of metadata) {
 
                 const jsonWriter: JsonWriter<T> = new JsonWriter<T>(
-                    this, optionsClone, instance as T, serializableMetadata, json
+                    context, instance as T, serializableMetadata, json
                 );
 
                 // Checks and calls custom writeJson from ISerializable interface
@@ -309,7 +223,7 @@ export class Serializer {
                 }
 
                 // Add the class version used
-                if (optionsClone.typeMetadata) {
+                if (options.typeMetadata) {
                     versions.push([
                         `${serializableMetadata.namespace}.${serializableMetadata.name}`,
                         serializableMetadata.version
@@ -318,7 +232,7 @@ export class Serializer {
             }
 
             // If set to add instance metadata (if any)
-            if (optionsClone.objectMetadata) {
+            if (options.objectMetadata) {
 
                 const instanceMetadataKeys: string[] = Reflect.getMetadataKeys(instance);
                 if (instanceMetadataKeys.length > 0) {
@@ -351,71 +265,89 @@ export class Serializer {
     }
 
     /**
-     * Restores a given json object to its original instance of class, if possible. For the restoration
-     * process to work 100% for some given cases (i.e. when inheritance is involved), some metadata
-     * must be present in the {@link Json} object.
-     * @param json The object in {@link Json} format to be restored in ``T`` instance.
-     * @param clazz (optional) The class to be used as a root type or for type checking.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns The restored object as a ``T`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
+     * @inheritDoc
      */
-    public fromJson<T, S = Json<T>, E = void>(json: S, clazz?: Class,
-                                              options?: DeserializationOptions, extra?: E): T;
+    public fromJson<T, S = Json<T>, E = void>(json: S, clazz?: Class, options?: DeserializationOptions,
+                                              extra?: E, context?: DeserializationContext): T;
     /**
-     * Restores a given array of json object to its original instance of class, if possible. For the
-     * restoration process to work 100% for some given cases (i.e. when inheritance is involved),
-     * some metadata must be present in the {@link Json} object.
-     * @param jsons The array of object in {@link Json} format to be restored in ``Array<T>`` instance.
-     * @param clazz (optional) The class to be used as a root type or for type checking.
-     * @param options (optional) Operation options. Override global {@link config}.
-     * @param extra (optional) Extra data to pass to transformer if the root object requires it.
-     * @returns The restored object as an ``Array<T>`` instance.
-     *
-     * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data must be passed but none was given (see {@link #Serialize @Serialize} or {@link SerializerRegistry.addType}).
-     * @throws {@link InvalidExtraTransformDataException} - When extra data was defined but is invalid for a given transformer.
-     * @throws {@link NotSerializableException} - When a not serializable type is received.
+     * @inheritDoc
      */
     public fromJson<T, S = Json<T>, E = void>(jsons: Array<S>, clazz?: Class,
-                                              options?: DeserializationOptions, extra?: E): Array<T>;
+                                              options?: DeserializationOptions, extra?: E,
+                                              context?: DeserializationContext): Array<T>;
     public fromJson<T, S = Json<T>, E = void>(...args: any[]): T|Array<T> {
 
         const json: S|Array<S> = args[0];
-        const clazz: Class = args[1];
-        const options: DeserializationOptions = args[2];
-        const extra: E = args[3];
 
         // The json is null/undefined, no need to work
         if (json == null) {
             return json === null ? null : undefined;
         }
 
-        // Options for the operation with defaults
-        let optionsClone: DeserializationOptions;
+        let clazz: Class = args[1];
+        let options: DeserializationOptions = args[2];
+        let extra: E = args[3];
+        let context: DeserializationContext = args[4];
 
-        // No options, set defaults
-        if (options == null) {
-            optionsClone = {
-                typeCheck: this._config.typeCheck,
-                versionMismatchBehavior: this._config.versionMismatchBehavior,
-                objectMetadata: this._config.objectMetadata,
-                groups: null,
-                excludeUngrouped: false,
-            };
+        // If no serialization context is passed, we assume this is a root operation and a new context
+        // will be created
+        if (context == null) {
+
+            // No options, set defaults
+            if (options == null) {
+                options = {
+                    objectMetadata: this._config.objectMetadata,
+                    typeCheck: this._config.typeCheck,
+                    versionMismatchBehavior: this._config.versionMismatchBehavior,
+                    groups: null,
+                    excludeUngrouped: false
+                };
+            }
+            // With options, set defaults if not set
+            else {
+                options = {
+                    objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
+                    typeCheck: options.typeCheck != null ? options.typeCheck : this._config.typeCheck,
+                    groups: options.groups != null ? [...options.groups] : null,
+                    excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : false
+                };
+            }
+            const referenceObjectMap: Map<string, Object> = new Map<string, Object>();
+            context = new DeserializationContext(referenceObjectMap, "#", this, options);
         }
-        // With options, set defaults if not set
+        // We have a context
         else {
-            optionsClone = {
-                typeCheck: options.typeCheck != null ? options.typeCheck : this._config.typeCheck,
-                versionMismatchBehavior: options.versionMismatchBehavior != null ? options.versionMismatchBehavior : this._config.versionMismatchBehavior,
-                objectMetadata: options.objectMetadata != null ? options.objectMetadata : this._config.objectMetadata,
-                groups: options.groups != null ? options.groups : null,
-                excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : false
-            };
+
+            // If the context already worked o that object, return its cached object
+            if (json instanceof Object) {
+
+                if (Reflect.has(json, "$ref")) {
+
+                    const pointer: string = JsonPointerEncoder.decode(Reflect.get(json, "$ref"));
+
+                    if (context.referenceObjectMap.has(pointer)) {
+                        return context.referenceObjectMap.get(pointer) as T|T[];
+                    }
+                    else {
+                        throw new Error("Unknown JSON pointer"); // TODO throw custom exception
+                    }
+                }
+            }
+
+            // No options, use the context options
+            if (options == null) {
+                options = context.deserializationOptions;
+            }
+            // Options were set for the operation and is descendents, set defaults if not set
+            else {
+                // TODO DRY create a function that sets defaults for options
+                options = {
+                    objectMetadata: options.objectMetadata != null ? options.objectMetadata : context.deserializationOptions.objectMetadata,
+                    typeCheck: options.typeCheck != null ? options.typeCheck : context.deserializationOptions.typeCheck,
+                    groups: options.groups != null ? [...options.groups] : context.deserializationOptions.groups,
+                    excludeUngrouped: options.excludeUngrouped != null ? options.excludeUngrouped : context.deserializationOptions.excludeUngrouped
+                };
+            }
         }
 
         // Type of the instance
@@ -440,14 +372,14 @@ export class Serializer {
                 const serializableMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, clazz);
 
                 // Checks class version used
-                if (optionsClone.versionMismatchBehavior !== BehaviorEnum.IGNORE &&
+                if (options.versionMismatchBehavior !== BehaviorEnum.IGNORE &&
                     serializableMetadata.version != version[1]) {
 
-                    if (optionsClone.versionMismatchBehavior === BehaviorEnum.WARNING) {
-                        console.warn(new VersionMismatchException(json, version[0], serializableMetadata.version, version[1]));
+                    if (options.versionMismatchBehavior === BehaviorEnum.WARNING) {
+                        console.warn(new VersionMismatchException(json as any, version[0], serializableMetadata.version, version[1]));
                     }
                     else {
-                        throw new VersionMismatchException(json, version[0], serializableMetadata.version, version[1]);
+                        throw new VersionMismatchException(json as any, version[0], serializableMetadata.version, version[1]);
                     }
                 }
 
@@ -456,10 +388,12 @@ export class Serializer {
 
             const instance: T = Reflect.construct(metadata[metadata.length - 1].clazz, []);
 
+            context.referenceObjectMap.set(context.pointer, instance);
+
             for (let serializableMetadata of metadata) {
 
                 const jsonReader: JsonReader<T> = new JsonReader<T>(
-                    this, optionsClone, instance as T, serializableMetadata, json as Json<T>
+                    context, instance as T, serializableMetadata, json as unknown as Json<T>
                 );
 
                 // Checks and calls custom writeJson from ISerializable interface
@@ -476,7 +410,7 @@ export class Serializer {
             }
 
             // If set to apply object metadata
-            if (optionsClone.objectMetadata && jsonMetadata.objectMetadata != null &&
+            if (options.objectMetadata && jsonMetadata.objectMetadata != null &&
                 jsonMetadata.objectMetadata.length > 0) {
                 for (let objectMetadata of jsonMetadata.objectMetadata) {
                     Reflect.defineMetadata(objectMetadata[0], objectMetadata[1], instance);
@@ -487,7 +421,7 @@ export class Serializer {
         }
         // Verify if the type has a transformer
         else if ((clazz != null && SerializerRegistry.hasTransformer(clazz as NewableClass)) ||
-                 SerializerRegistry.hasTransformer(objectType as NewableClass)) {
+            SerializerRegistry.hasTransformer(objectType as NewableClass)) {
 
             let transformer: ITransformer<T|Array<T>, S|Array<S>, E>;
 
@@ -498,7 +432,7 @@ export class Serializer {
                 transformer = SerializerRegistry.getTransformer(objectType as NewableClass);
             }
 
-            return transformer.readJson(json, extra, this, optionsClone);
+            return transformer.readJson(json, extra, context);
         }
         // Unknown Type
         else {

@@ -1,4 +1,5 @@
-import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
+import { DeserializationContext } from "./deserialization-context";
+import { SerializationContext } from "./serialization-context";
 
 /**
  * Describes method signatures for a type transformer.
@@ -12,15 +13,14 @@ export interface ITransformer<T, S, E = void> {
     /**
      *
      * @param json The original JSON being deserialized.
-     * @param serializer The serializer service that called the transformer.
      * @param extra (optional) Extra data to helps transformation. You MAY want to throw an
      *        {@link ExtraTransformDataRequiredException} if the transform requires it. You MAY want
      *        to throw {@link InvalidExtraTransformDataException} if the extra data is in an invalid
      *        format.
-     * @param options (optional)
+     * @param context (optional) The operation context.
      * The deserialized object as an instance of T.
      */
-    readJson(json: S, extra?: E, serializer?: Serializer, options?: DeserializationOptions): T;
+    readJson(json: S, extra?: E, context?: DeserializationContext): T;
 
-    writeJson(instance: T, extra?: E, serializer?: Serializer, options?: SerializationOptions): S;
+    writeJson(instance: T, extra?: E, context?: SerializationContext): S;
 }

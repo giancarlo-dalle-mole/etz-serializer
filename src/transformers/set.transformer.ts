@@ -1,6 +1,7 @@
-import { Class, ExtraTypes, ITransformer } from "../common";
+import {
+    Class, DeserializationContext, ExtraTypes, ITransformer, SerializationContext
+} from "../common";
 import { TypesEnum } from "../enums";
-import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
 
 /**
  * Transformer for {@link Set} objects. Intended to be used as a
@@ -21,23 +22,27 @@ export class SetTransformer implements ITransformer<Set<any>, Array<any>, SetExt
     /**
      * @inheritDoc
      */
-    public readJson(json: Array<any>, extra?: SetExtra, serializer?: Serializer,
-                    options?: DeserializationOptions): Set<any> {
+    public readJson(json: Array<any>, extra?: SetExtra, context?: DeserializationContext): Set<any> {
 
         if (json == null) {
             return json === null ? null : undefined;
         }
 
         const set: Set<any> = new Set<any>();
+        let i: number = 0;
         for (let item of json) {
+
+            const childContext: DeserializationContext = context.child(i.toString());
 
             const itemType: Class|TypesEnum.ANY = extra?.itemType();
             if (itemType === TypesEnum.ANY || itemType == null) {
-                set.add(serializer.fromJson(item, null, options, extra.itemExtra));
+                set.add(childContext.serializer.fromJson(item, null, null, extra?.itemExtra, childContext));
             }
             else {
-                set.add(serializer.fromJson(item, itemType, options, extra.itemExtra));
+                set.add(childContext.serializer.fromJson(item, itemType, null, extra?.itemExtra, childContext));
             }
+
+            i++;
         }
 
         return set;
@@ -46,16 +51,20 @@ export class SetTransformer implements ITransformer<Set<any>, Array<any>, SetExt
     /**
      * @inheritDoc
      */
-    public writeJson(instance: Set<any>, extra?: SetExtra, serializer?: Serializer,
-                     options?: SerializationOptions): Array<any> {
+    public writeJson(instance: Set<any>, extra?: SetExtra, context?: SerializationContext): Array<any> {
 
         if (instance == null) {
             return instance === null ? null : undefined;
         }
 
         const setArray: Array<any> = [];
+        let i: number = 0;
         for (let item of instance) {
-            setArray.push(serializer.toJson(item, options, extra?.itemExtra));
+
+            const childContext: SerializationContext = context.child(i.toString());
+            setArray.push(childContext.serializer.toJson(item, null, extra?.itemExtra, childContext));
+
+            i++;
         }
 
         return setArray;

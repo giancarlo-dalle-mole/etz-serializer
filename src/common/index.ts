@@ -1,7 +1,9 @@
 export * from "./abstract-class.type";
 export * from "./class.type";
+export * from "./deserialization-context";
 export * from "./extra-types.type";
 export * from "./instantiation-policy.enum";
+export * from "./json-metadata.type";
 export * from "./json.type";
 export * from "./metadata-keys.constant";
 export * from "./newable-class.type";
@@ -12,6 +14,7 @@ export * from "./serializable-field.type";
 export * from "./serializable-field-metadata";
 export * from "./serializable-metadata";
 export * from "./serializable-options.type";
+export * from "./serialization-context";
 export * from "./serialize-options.type";
 export * from "./transformer.interface";
 export * from "./transformer-options.type";

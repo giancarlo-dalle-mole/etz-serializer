@@ -27,7 +27,7 @@ export class SerializableFieldMetadata<E = void> {
     /**
      * Field name.
      */
-    public readonly name: PropertyKey;
+    public readonly name: string;
     /**
      * List of groups that the field belongs.
      */
@@ -39,7 +39,7 @@ export class SerializableFieldMetadata<E = void> {
     //#endregion
 
     //#region Constructor
-    constructor(name: PropertyKey, type: () => Class|TypesEnum, groups?: Array<string>, extra?: E) {
+    constructor(name: string, type: () => Class|TypesEnum, groups?: Array<string>, extra?: E) {
 
         this.name = name;
         this.wrappedType = type;

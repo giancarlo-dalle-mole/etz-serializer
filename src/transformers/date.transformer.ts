@@ -1,5 +1,4 @@
-import { ITransformer } from "../common";
-import { Serializer } from "../services";
+import { DeserializationContext, ITransformer, SerializationContext } from "../common";
 
 /**
  * Transformer for {@link Date} objects. Intended to be used as a {@link #InstantiationPolicyEnum.SINGLETON SINGLETON}.
@@ -19,7 +18,7 @@ export class DateTransformer implements ITransformer<Date, string> {
     /**
      * @inheritDoc
      */
-    public readJson(json: string, extra?: void, serializer?: Serializer): Date {
+    public readJson(json: string, extra?: void, context?: DeserializationContext): Date {
 
         if (json == null) {
             return json === null ? null : undefined;
@@ -31,7 +30,7 @@ export class DateTransformer implements ITransformer<Date, string> {
     /**
      * @inheritDoc
      */
-    public writeJson(instance: Date, extra?: void, serializer?: Serializer): string {
+    public writeJson(instance: Date, extra?: void, context?: SerializationContext): string {
 
         if (instance == null) {
             return instance === null ? null : undefined;

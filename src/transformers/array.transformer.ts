@@ -1,8 +1,9 @@
 import { IllegalArgumentException } from "@enterprize/exceptions";
 
-import { Class, ExtraTypes, ITransformer } from "../common";
+import {
+    Class, DeserializationContext, ExtraTypes, ITransformer, SerializationContext
+} from "../common";
 import { TypesEnum } from "../enums";
-import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
 
 /**
  * Transformer for {@link Array} objects. Intended to be used as a
@@ -23,8 +24,7 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
     /**
      * @inheritDoc
      */
-    public readJson(json: Array<any>, extra?: ArrayExtra, serializer?: Serializer,
-                    options?: DeserializationOptions): Array<any> {
+    public readJson(json: Array<any>, extra?: ArrayExtra, context?: DeserializationContext): Array<any> {
 
         if (json == null) {
             return json === null ? null : undefined;
@@ -69,21 +69,26 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
         }
 
         const array: Array<any> = [];
+        let i: number = 0;
         for (let item of json) {
+
+            const childContext: DeserializationContext = context.child(i.toString());
 
             if (!Array.isArray(item)) {
 
                 const itemType: Class|TypesEnum.ANY = extra?.itemType();
                 if (itemType === TypesEnum.ANY || itemType == null) {
-                    array.push(serializer.fromJson(item, null, options, extra?.itemExtra));
+                    array.push(childContext.serializer.fromJson(item, null, null, extra?.itemExtra, childContext));
                 }
                 else {
-                    array.push(serializer.fromJson(item, itemType, options, extra?.itemExtra));
+                    array.push(childContext.serializer.fromJson(item, itemType, null, extra?.itemExtra, childContext));
                 }
             }
             else {
-                array.push(serializer.fromJson(item, Array, options, {...extra, dimensions: extra.dimensions - 1}));
+                array.push(childContext.serializer.fromJson(item, Array, null, {...extra, dimensions: extra.dimensions - 1}, childContext));
             }
+
+            i++;
         }
 
         return array;
@@ -92,8 +97,7 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
     /**
      * @inheritDoc
      */
-    public writeJson(instance: Array<any>, extra?: ArrayExtra, serializer?: Serializer,
-                     options?: SerializationOptions): Array<any> {
+    public writeJson(instance: Array<any>, extra?: ArrayExtra, context?: SerializationContext): Array<any> {
 
         if (instance == null) {
             return instance === null ? null : undefined;
@@ -103,8 +107,13 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
         }
 
         const jsonArray: Array<any> = [];
+        let i: number = 0;
         for (let item of instance) {
-            jsonArray.push(serializer.toJson(item, options));
+
+            const childContext: SerializationContext = context.child(i.toString());
+            jsonArray.push(childContext.serializer.toJson(item, null, null, childContext));
+
+            i++;
         }
 
         return jsonArray;

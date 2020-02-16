@@ -1,4 +1,4 @@
-import { ITransformer } from "../common";
+import { DeserializationContext, ITransformer, SerializationContext } from "../common";
 import { Serializer } from "../services";
 
 /**
@@ -20,7 +20,7 @@ export class StringTransformer implements ITransformer<string|String, string, St
     /**
      * @inheritDoc
      */
-    public readJson(json: string, extra?: StringExtra, serializer?: Serializer): string|String {
+    public readJson(json: string, extra?: StringExtra, context?: DeserializationContext): string|String {
 
         if (json == null) {
             return json === null ? null : undefined;
@@ -38,7 +38,7 @@ export class StringTransformer implements ITransformer<string|String, string, St
     /**
      * @inheritDoc
      */
-    public writeJson(instance: string|String, extra?: StringExtra, serializer?: Serializer): string {
+    public writeJson(instance: string|String): string {
 
         if (instance == null) {
             return instance === null ? null : undefined;

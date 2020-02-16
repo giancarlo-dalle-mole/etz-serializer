@@ -27,7 +27,7 @@
     "scripts": {
         "compile": "tsc --watch",
         "dev": "nodemon --watch ./dist --delay 5 -r source-map-support/register ./dist/index.js",
-        "test_dev": "ts-node -r source-map-support/register ./test/index.ts"
+        "test": "mocha -r ts-node/register -r source-map-support/register --file src/index.ts src/**/*.spec.ts"
     },
     "dependencies": {
         "@enterprize/exceptions": "^1.0.2"
@@ -37,7 +37,11 @@
         "reflect-metadata": "^0.1.13"
     },
     "devDependencies": {
+        "@types/chai": "^4.2.9",
+        "@types/mocha": "^7.0.1",
         "@types/node": "13.1.4",
+        "chai": "^4.2.0",
+        "mocha": "^7.0.1",
         "nodemon": "2.0.2",
         "reflect-metadata": "0.1.13",
         "source-map-support": "0.5.16",

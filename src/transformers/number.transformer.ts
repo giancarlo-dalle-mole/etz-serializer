@@ -1,7 +1,6 @@
 import { IllegalArgumentException } from "@enterprize/exceptions";
 
-import { ITransformer } from "../common";
-import { Serializer } from "../services";
+import { DeserializationContext, ITransformer, SerializationContext } from "../common";
 
 /**
  * Transformer for number primitives and {@link Number} Wrappers. Intended to be used as a
@@ -22,7 +21,7 @@ export class NumberTransformer implements ITransformer<number|Number, number|str
     /**
      * @inheritDoc
      */
-    public readJson(json: number|string, extra?: NumberExtra, serializer?: Serializer): number|Number {
+    public readJson(json: number|string, extra?: NumberExtra, context?: DeserializationContext): number|Number {
 
         if (json == null) {
             return json === null ? null : undefined;
@@ -62,7 +61,7 @@ export class NumberTransformer implements ITransformer<number|Number, number|str
     /**
      * @inheritDoc
      */
-    public writeJson(instance: number|Number, extra?: NumberExtra, serializer?: Serializer): number|string {
+    public writeJson(instance: number|Number, extra?: NumberExtra, context?: SerializationContext): number|string {
 
         if (instance == null) {
             return instance === null ? null : undefined;

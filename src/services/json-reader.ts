@@ -1,18 +1,14 @@
-import { Json, SerializableMetadata } from "../common";
+import {
+    DeserializationContext, Json, SerializableMetadata, SerializationContext
+} from "../common";
 import { TypesEnum } from "../enums";
-import { DeserializationOptions } from "./deserialization-options.type";
-import { Serializer } from "./serializer";
 
 export class JsonReader<T extends Object> {
 
     /**
-     * The serializer service used.
+     * The serialization context.
      */
-    private readonly serializer: Serializer;
-    /**
-     * Options of the deserialization process.
-     */
-    private readonly options: DeserializationOptions;
+    private readonly context: DeserializationContext;
     /**
      * The instance being deserialized.
      */
@@ -26,11 +22,10 @@ export class JsonReader<T extends Object> {
      */
     private readonly _json: Json<T>;
 
-    constructor(serializer: Serializer, options: DeserializationOptions, instance: T,
+    constructor(context: DeserializationContext, instance: T,
                 metadata: SerializableMetadata, json: Json<T>) {
 
-        this.serializer = serializer;
-        this.options = options;
+        this.context = context;
         this.instance = instance;
         this.metadata = metadata;
         this._json = json;
@@ -40,14 +35,16 @@ export class JsonReader<T extends Object> {
 
         for (let fieldMetadata of this.metadata.serializableFields) {
 
+            const childContext: DeserializationContext = this.context.child(fieldMetadata.name);
+
             const field: any = Reflect.get(this._json, fieldMetadata.name);
             let deserializedField: any;
 
             if (fieldMetadata.type === TypesEnum.ANY) {
-                deserializedField = this.serializer.fromJson(field, null, this.options, fieldMetadata.extra);
+                deserializedField = childContext.serializer.fromJson(field, null, null, fieldMetadata.extra, childContext);
             }
             else {
-                deserializedField = this.serializer.fromJson(field, fieldMetadata.type, this.options, fieldMetadata.extra);
+                deserializedField = childContext.serializer.fromJson(field, fieldMetadata.type, null, fieldMetadata.extra, childContext);
             }
 
             Reflect.set(this.instance, fieldMetadata.name, deserializedField);

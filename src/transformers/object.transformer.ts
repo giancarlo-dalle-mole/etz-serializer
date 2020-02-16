@@ -1,5 +1,4 @@
-import { ITransformer, Json } from "../common";
-import { DeserializationOptions, SerializationOptions, Serializer } from "../services";
+import { DeserializationContext, ITransformer, Json, SerializationContext } from "../common";
 
 /**
  * Transformer for plain Objects. All attributes are serialized/deserialized using the {@link Serializer}
@@ -20,8 +19,7 @@ export class ObjectTransformer implements ITransformer<Object, Json<Object>> {
     /**
      * @inheritDoc
      */
-    public readJson(json: Json<Object>, extra?: void, serializer?: Serializer,
-                    options?: DeserializationOptions): Object {
+    public readJson(json: Json<Object>, extra?: void, context?: DeserializationContext): Object {
 
         if (json == null) {
             return json === null ? null : undefined;
@@ -31,7 +29,10 @@ export class ObjectTransformer implements ITransformer<Object, Json<Object>> {
 
         const keys: Array<string> = Object.keys(json);
         for (let key of keys) {
-            const deserializedValue: any = serializer.fromJson(Reflect.get(json, key), null, options);
+
+            const childContext: DeserializationContext = context.child(key);
+
+            const deserializedValue: any = childContext.serializer.fromJson(Reflect.get(json, key), null, null, childContext);
             Reflect.set(object, key, deserializedValue);
         }
 
@@ -41,18 +42,20 @@ export class ObjectTransformer implements ITransformer<Object, Json<Object>> {
     /**
      * @inheritDoc
      */
-    public writeJson(instance: Object, extra?: void, serializer?: Serializer,
-                     options?: SerializationOptions): Json<Object> {
+    public writeJson(instance: Object, extra?: void, context?: SerializationContext): Json<Object> {
 
         if (instance == null) {
             return instance === null ? null : undefined;
         }
 
-        let json: Json<Object> = {};
+        let json: Json<Object> = {} as any;
 
         const keys: Array<string> = Object.keys(instance);
         for (let key of keys) {
-            const serializedValue: any = serializer.toJson(Reflect.get(instance, key), options);
+
+            const childContext: SerializationContext = context.child(key);
+
+            const serializedValue: any = childContext.serializer.toJson(Reflect.get(instance, key), null, null, childContext);
             Reflect.set(json, key, serializedValue);
         }
 

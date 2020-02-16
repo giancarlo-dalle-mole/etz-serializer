@@ -14,7 +14,7 @@ Custom classes and native TypeScript/JavaScript classes serialization and deseri
 - Object serialization/deserialization customization per serializable class;   
 - Open/Closed principle allowing programmer to override basically everything;
 - Minimal or no extra metadata on the output JSON object (configurable globally or per operation);
-- Serialization groups/context;
+- Serialization groups;
 - Custom types transformers, allowing almost anything to be serialized;
 - Namespaces and custom names;
 - IoC Container aware;
