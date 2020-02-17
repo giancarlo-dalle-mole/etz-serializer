@@ -68,16 +68,20 @@ export class SerializerRegistry {
         }
 
         const fieldInfos: Array<SerializableFieldMetadata> = [];
-        for (let serializableField of serializableFields) {
 
-            const fieldInfo: SerializableFieldMetadata = new SerializableFieldMetadata<any>(
-                serializableField.name as string,
-                serializableField.type,
-                serializableField.groups,
-                serializableField.extra
-            );
+        // The class did not declare any field for serialization
+        if (serializableFields != null) {
+            for (let serializableField of serializableFields) {
 
-            fieldInfos.push(fieldInfo);
+                const fieldInfo: SerializableFieldMetadata = new SerializableFieldMetadata<any>(
+                    serializableField.name as string,
+                    serializableField.type,
+                    serializableField.groups,
+                    serializableField.extra
+                );
+
+                fieldInfos.push(fieldInfo);
+            }
         }
 
         const metadata: SerializableMetadata = new SerializableMetadata(

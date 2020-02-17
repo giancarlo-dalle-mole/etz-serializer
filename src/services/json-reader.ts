@@ -1,39 +1,51 @@
 import {
-    DeserializationContext, Json, SerializableMetadata, SerializationContext
+    DeserializationContext, Json, SerializableMetadata
 } from "../common";
 import { TypesEnum } from "../enums";
+import { AbstractJsonProcessor } from "./abstract-json-processor";
 
-export class JsonReader<T extends Object> {
+/**
+ * Service object responsible to perform deserialization of a instance. Each time a
+ * {@link ISerializer.fromJson} is called and the value is an object, a new {@link JsonWriter} is
+ * created to perform the operation per context.
+ *
+ * @version 1.0.0
+ * @author Giancarlo Dalle Mole
+ * @since 17/02/2020
+ */
+export class JsonReader<T extends Object> extends AbstractJsonProcessor<T> {
 
+    //#region Protected Attributes
     /**
-     * The serialization context.
+     * The deserialization context.
      */
-    private readonly context: DeserializationContext;
-    /**
-     * The instance being deserialized.
-     */
-    private readonly instance: T;
-    /**
-     * The class serializable metadata.
-     */
-    private readonly metadata: SerializableMetadata;
-    /**
-     * The raw json object being deserialized.
-     */
-    private readonly _json: Json<T>;
+    protected readonly context: DeserializationContext;
+    //#endregion
 
-    constructor(context: DeserializationContext, instance: T,
-                metadata: SerializableMetadata, json: Json<T>) {
+    //#region Constructor
+    constructor(instance: T, metadata: SerializableMetadata, json: Json<T>,
+                context: DeserializationContext) {
+        super(instance, metadata, json);
 
         this.context = context;
-        this.instance = instance;
-        this.metadata = metadata;
-        this._json = json;
     }
+    //#endregion
 
+    //#region Public Methods
+    /**
+     * Restores the instance of a given {@link Json} object using the default strategy. You may call
+     * this method when working with customization of the deserialization process
+     * ({@link ISerializable.writeJson}) to get the default object and modify as you need.
+     */
     public defaultReadJson(): void {
 
         for (let fieldMetadata of this.metadata.serializableFields) {
+
+            const isInGroup: boolean = this.isInGroup(fieldMetadata.groups, this.context.deserializationOptions.groups,
+                this.context.deserializationOptions.excludeUngrouped);
+            if (!isInGroup) {
+                continue;
+            }
 
             const childContext: DeserializationContext = this.context.child(fieldMetadata.name);
 
@@ -50,8 +62,5 @@ export class JsonReader<T extends Object> {
             Reflect.set(this.instance, fieldMetadata.name, deserializedField);
         }
     }
-
-    public get json(): Json<T> {
-        return this._json;
-    }
+    //#endregion
 }

@@ -1,10 +1,11 @@
 import "mocha";
 import { expect } from "chai";
-import { A } from "../../tests/a.spec";
-import { B } from "../../tests/b.spec";
+
+import { A, B, Bar, Baz, Foo, Person, Point2D } from "../../tests/serializer";
+import { Point3D } from "../../tests/serializer/point-3d";
+import { Pointer } from "../../tests/serializer/pointer";
 
 import { Json } from "../common";
-import { Serializable, Serialize } from "../decorators";
 import { JsonMetadata } from "../common";
 import { Serializer } from "./serializer";
 
@@ -36,7 +37,7 @@ describe("Serializer", () => {
                     ],
                     objectMetadata: undefined
                 }
-            });
+            } as Json<Point2D>);
         });
 
         it("From Json", () => {
@@ -61,6 +62,294 @@ describe("Serializer", () => {
             expect(point2DRestored instanceof Point2D).to.true;
             expect(point2DRestored.constructor === Point2D).to.true;
             expect(point2DRestored).to.deep.equal(point2D);
+        });
+
+        it("To Json - login group", () => {
+
+            const elizabeth: Person = new Person();
+            elizabeth.firstName = "Elizabeth";
+            elizabeth.lastName = "Keen";
+
+            const katarina: Person = new Person();
+            katarina.firstName = "Katarina";
+            katarina.lastName = "Rostova";
+
+            const raymond: Person = new Person();
+            raymond.firstName = "Raymond";
+            raymond.lastName = "Reddington";
+
+            elizabeth.mother = katarina;
+            elizabeth.father = raymond;
+
+            const elizabethLogin: Json<Person> = serializer.toJson(elizabeth, {groups: ["login"]});
+            expect(elizabethLogin).to.deep.equal({
+                firstName: "Elizabeth",
+                lastName: "Keen",
+                "__enterprize:serializer:metadata": {
+                    versions: [
+                        ["HumanResources.Person", 1]
+                    ],
+                    objectMetadata: undefined
+                }
+            } as Json<Person>);
+        });
+
+        it("From Json - login group", () => {
+
+            const elizabethLoginJson: Json<Person> = {
+                firstName: "Elizabeth",
+                lastName: "Keen",
+                "__enterprize:serializer:metadata": {
+                    versions: [
+                        ["HumanResources.Person", 1]
+                    ],
+                    objectMetadata: undefined
+                }
+            };
+
+            const elizabethLogin: Person = new Person();
+            elizabethLogin.firstName = "Elizabeth";
+            elizabethLogin.lastName = "Keen";
+
+            const elizabethLoginRestored: Person = serializer.fromJson(elizabethLoginJson, null, {groups: ["login"]});
+
+            expect(elizabethLoginRestored).to.deep.equal(elizabethLogin);
+        });
+
+        it("From Json - login group with extra", () => {
+
+            const elizabethLoginJson: Json<Person> = {
+                firstName: "Elizabeth",
+                lastName: "Keen",
+                mother: {
+                    firstName: "Katarina",
+                    lastName: "Rostova",
+                    father: undefined,
+                    mother: undefined,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["HumanResources.Person", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                father: {
+                    firstName: "Raymond",
+                    lastName: "Reddington",
+                    father: undefined,
+                    mother: undefined,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["HumanResources.Person", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                "__enterprize:serializer:metadata": {
+                    versions: [
+                        ["HumanResources.Person", 1]
+                    ],
+                    objectMetadata: undefined
+                }
+            };
+
+            const elizabethLogin: Person = new Person();
+            elizabethLogin.firstName = "Elizabeth";
+            elizabethLogin.lastName = "Keen";
+
+            const elizabethLoginRestored: Person = serializer.fromJson(elizabethLoginJson, null, {groups: ["login"]});
+
+            expect(elizabethLoginRestored).to.deep.equal(elizabethLogin);
+        });
+
+        it("To Json - details group", () => {
+
+            const elizabethDetails: Person = new Person();
+            elizabethDetails.firstName = "Elizabeth";
+            elizabethDetails.lastName = "Keen";
+
+            const katarina: Person = new Person();
+            katarina.firstName = "Katarina";
+            katarina.lastName = "Rostova";
+
+            const raymond: Person = new Person();
+            raymond.firstName = "Raymond";
+            raymond.lastName = "Reddington";
+
+            elizabethDetails.mother = katarina;
+            elizabethDetails.father = raymond;
+
+            const elizabethDetailsJson: Json<Person> = serializer.toJson(elizabethDetails, {groups: ["details"]});
+            expect(elizabethDetailsJson).to.deep.equal({
+                firstName: "Elizabeth",
+                lastName: "Keen",
+                mother: {
+                    firstName: "Katarina",
+                    lastName: "Rostova",
+                    father: undefined,
+                    mother: undefined,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["HumanResources.Person", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                father: {
+                    firstName: "Raymond",
+                    lastName: "Reddington",
+                    father: undefined,
+                    mother: undefined,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["HumanResources.Person", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                "__enterprize:serializer:metadata": {
+                    versions: [
+                        ["HumanResources.Person", 1]
+                    ],
+                    objectMetadata: undefined
+                }
+            } as Json<Person>);
+        });
+
+        it("From Json - details group", () => {
+
+            const elizabethDetailsJson: Json<Person> = {
+                firstName: "Elizabeth",
+                lastName: "Keen",
+                mother: {
+                    firstName: "Katarina",
+                    lastName: "Rostova",
+                    father: undefined,
+                    mother: undefined,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["HumanResources.Person", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                father: {
+                    firstName: "Raymond",
+                    lastName: "Reddington",
+                    father: undefined,
+                    mother: undefined,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["HumanResources.Person", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                "__enterprize:serializer:metadata": {
+                    versions: [
+                        ["HumanResources.Person", 1]
+                    ],
+                    objectMetadata: undefined
+                }
+            };
+
+            const elizabethDetails: Person = new Person();
+            elizabethDetails.firstName = "Elizabeth";
+            elizabethDetails.lastName = "Keen";
+
+            const katarina: Person = new Person();
+            katarina.firstName = "Katarina";
+            katarina.lastName = "Rostova";
+            // Necessary, in future ES spec, declared class fields will initialize with undefined
+            katarina.mother  = undefined;
+            katarina.father = undefined;
+
+            const raymond: Person = new Person();
+            raymond.firstName = "Raymond";
+            raymond.lastName = "Reddington";
+            // Necessary, in future ES spec, declared class fields will initialize with undefined
+            raymond.mother  = undefined;
+            raymond.father = undefined;
+
+            elizabethDetails.mother = katarina;
+            elizabethDetails.father = raymond;
+
+            const elizabethDetailsRestored: Person = serializer.fromJson(elizabethDetailsJson, null, {groups: ["details"]});
+            expect(elizabethDetailsRestored).to.deep.equal(elizabethDetails);
+        });
+
+        it("From Json inheritance OK", () => {
+
+            const point3d: Point3D = new Point3D();
+            point3d.x = 10;
+            point3d.y = 12;
+            point3d.z = 3;
+
+            const point3dJson: Json<Point3D> = serializer.toJson(point3d);
+            const point2dRestored: Point2D = serializer.fromJson(point3dJson, Point2D, {typeCheck: true});
+
+            expect(point2dRestored).to.deep.equal(point3d);
+            expect(point2dRestored instanceof Point3D).to.equal(true);
+        });
+
+        it("From Json inheritance NOT OK - throws exception", () => {
+
+            const point2d: Point2D = new Point2D();
+            point2d.x = 10;
+            point2d.y = 12;
+
+            const point2dJson: Json<Point2D> = serializer.toJson(point2d);
+
+            const fromJson = serializer.fromJson.bind(serializer, point2dJson as any, Point3D, {typeCheck: true});
+
+            expect(fromJson)
+                .to.throw(Error);
+        });
+
+        it("From Json inheritance NOT OK but type check false", () => {
+
+            const point2d: Point2D = new Point2D();
+            point2d.x = 10;
+            point2d.y = 12;
+
+            const point2dJson: Json<Point2D> = serializer.toJson(point2d);
+            // Actually will be a Point3D and its assign is incorrect, never disable typeCheck unless you
+            // really know what you are doing
+            const point3dRestored: Point3D = serializer.fromJson(point2dJson, Point3D, {typeCheck: false});
+
+            expect(point3dRestored).to.deep.equal(point2d);
+            expect(point3dRestored.constructor).to.equal(Point2D);
+        });
+
+        it("From Json not inheritance NOT OK inside object", () => {
+
+            const pointerJson: Json<Pointer> = {
+                point2D: {
+                    x: 10,
+                    y: 12,
+                    "__enterprize:serializer:metadata": {
+                        versions: [["Points.Point2D", 1]],
+                        objectMetadata: undefined
+                    }
+                },
+                point3D: {
+                    x: 10,
+                    y: 12,
+                    "__enterprize:serializer:metadata": {
+                        versions: [["Points.Point2D", 1]], // this says the object is a Point2D, which is not assignable to a Point3D
+                        objectMetadata: undefined
+                    }
+                },
+                "__enterprize:serializer:metadata": {
+                    versions: [["Points.Pointer", 1]],
+                    objectMetadata: undefined
+                }
+            };
+
+            const fromJson = serializer.fromJson.bind(serializer, pointerJson as any, Pointer, {typeCheck: true});
+
+            expect(fromJson)
+                .to.throw(Error);
         });
     });
 
@@ -210,52 +499,3 @@ describe("Serializer", () => {
     });
 });
 
-@Serializable({name: "Point2D", namespace: "Points", version: 1})
-class Point2D {
-
-    @Serialize()
-    public x: number;
-
-    @Serialize()
-    public y: number;
-}
-
-@Serializable({name: "Foo", namespace: "Foos", version: 1})
-class Foo {
-
-    @Serialize()
-    public fooValue: number;
-}
-
-@Serializable({name: "Bar", namespace: "Foos", version: 1})
-class Bar {
-
-    @Serialize()
-    public barValue: number;
-
-    @Serialize(() => Foo)
-    public foo: Foo;
-}
-
-@Serializable({name: "Baz", namespace: "Foos", version: 1})
-class Baz {
-
-    @Serialize(() => Foo)
-    public foo: Foo;
-
-    @Serialize(() => Bar)
-    public bar: Bar;
-}
-
-
-
-class Person {
-
-    firstName: string;
-
-    lastName: string;
-
-    father: Person;
-
-    mother: Person;
-}

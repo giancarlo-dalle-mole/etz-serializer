@@ -1,5 +1,5 @@
 import {
-    Class, DeserializationContext, ITransformer, Json, metadataKeys, NewableClass,
+    Class, DeserializationContext, ITransformer, Json, JsonMetadata, metadataKeys, NewableClass,
     SerializableMetadata, SerializationContext
 } from "../common";
 import { BehaviorEnum } from "../enums";
@@ -7,7 +7,6 @@ import {
     NotSerializableException, TypeMismatchException, VersionMismatchException
 } from "../exceptions";
 import { DeserializationOptions } from "./deserialization-options.type";
-import { JsonMetadata } from "../common/json-metadata.type";
 import { JsonPointerEncoder } from "./json-pointer-encoder";
 import { JsonReader } from "./json-reader";
 import { JsonWriter } from "./json-writer";
@@ -207,7 +206,7 @@ export class Serializer implements ISerializer {
             for (let serializableMetadata of metadata) {
 
                 const jsonWriter: JsonWriter<T> = new JsonWriter<T>(
-                    context, instance as T, serializableMetadata, json
+                    instance as T, serializableMetadata, json, context
                 );
 
                 // Checks and calls custom writeJson from ISerializable interface
@@ -353,15 +352,49 @@ export class Serializer implements ISerializer {
         // Type of the instance
         const objectType: Class = (args[0]).constructor;
 
-        // Special treatment to plain Object, need to see if has jsonMetadata set
-        if (objectType === Object && Reflect.has(json as Object, this.jsonMetadataKey)) {
+        // Special treatment to plain Object if it has jsonMetadata or a class was specified.
+        // TODO check if clazz has a transformer
+        if (objectType === Object && (Reflect.has(json as Object, this.jsonMetadataKey) || clazz != null)) {
 
-            const jsonMetadata: JsonMetadata = Reflect.get(json as Object, this.jsonMetadataKey);
+            if (clazz != null && !Reflect.hasOwnMetadata(metadataKeys.serializable, clazz)) {
+                throw new NotSerializableException(clazz);
+            }
+
+            let jsonMetadata: JsonMetadata = Reflect.get(json as Object, this.jsonMetadataKey);
 
             // No versions metadata defined and no root class set
-            if (jsonMetadata.versions == null && clazz == null) {
+            if ((jsonMetadata == null || jsonMetadata.versions == null || jsonMetadata.versions.length === 0)
+                && clazz == null) {
                 // throw new NotEnoughMetadataException(json); // TODO throw a better exception saying that we could not infer the type
                 throw new NotSerializableException(json);
+            }
+
+            if (jsonMetadata == null) {
+                jsonMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, clazz);
+            }
+            // Checks type if enabled
+            else if (clazz != null && context.deserializationOptions.typeCheck) {
+
+                const clazzJsonMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, clazz);
+
+                const clazzFqn: string = `${clazzJsonMetadata.namespace}.${clazzJsonMetadata.name}`;
+                const clazzVersion: number = clazzJsonMetadata.version;
+
+                let match: boolean = false;
+                for (let version of jsonMetadata.versions) {
+
+                    if (version[0] === clazzFqn && version[1] === clazzVersion) {
+                        match = true;
+                        break;
+                    }
+                    else if (version[0] === clazzFqn && version[1] !== clazzVersion) {
+                        throw new VersionMismatchException(json as any, clazzFqn, clazzVersion, version[1]);
+                    }
+                }
+                if (!match) {
+                    // TODO throw a custom exception
+                    throw new Error(`NotAssignableException - ${jsonMetadata.versions[jsonMetadata.versions.length - 1][0]} is not assignable to ${clazzFqn}`);
+                }
             }
 
             const metadata: Array<SerializableMetadata> = [];
@@ -393,7 +426,7 @@ export class Serializer implements ISerializer {
             for (let serializableMetadata of metadata) {
 
                 const jsonReader: JsonReader<T> = new JsonReader<T>(
-                    context, instance as T, serializableMetadata, json as unknown as Json<T>
+                    instance as T, serializableMetadata, json as unknown as Json<T>, context
                 );
 
                 // Checks and calls custom writeJson from ISerializable interface
@@ -423,6 +456,10 @@ export class Serializer implements ISerializer {
         else if ((clazz != null && SerializerRegistry.hasTransformer(clazz as NewableClass)) ||
             SerializerRegistry.hasTransformer(objectType as NewableClass)) {
 
+            if (clazz != null && objectType !== clazz) {
+                throw new TypeMismatchException(json, clazz, objectType);
+            }
+
             let transformer: ITransformer<T|Array<T>, S|Array<S>, E>;
 
             if (clazz != null) {
@@ -451,15 +488,6 @@ export class Serializer implements ISerializer {
         config.versionMismatchBehavior = config.versionMismatchBehavior != null ? config.versionMismatchBehavior : BehaviorEnum.ERROR;
 
         this._config = Object.freeze(config);
-    }
-
-    private checkType(value: any, expected: Class, actual: Class, metadata: SerializableMetadata): boolean {
-
-        if (actual != expected) {
-            throw new TypeMismatchException(value, expected, actual);
-        }
-
-        return true;
     }
     //#endregion
 }

@@ -13,9 +13,14 @@ import { Class } from "../common";
 export class NotSerializableException extends Exception<NotSerializableExceptionDetails> {
 
     //#region Constructor
-    constructor(value: Object|number|string|boolean) {
+    constructor(value: Object|number|string|boolean|Function) {
 
-        super(`Unknown type "${(value).constructor.name}". Did you forget to register a transformer or add the type as serializable?`, {clazz: (value).constructor, value: value});
+        if (typeof value === "function") {
+            super(`Unknown type "${value.name}". Did you forget to register a transformer or add the type as serializable?`, {clazz: value});
+        }
+        else {
+            super(`Unknown type "${(value).constructor.name}". Did you forget to register a transformer or add the type as serializable?`, {clazz: (value).constructor, value: value});
+        }
     }
     //#endregion
 }
