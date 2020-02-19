@@ -64,6 +64,118 @@ describe("Serializer", () => {
             expect(point2DRestored).to.deep.equal(point2D);
         });
 
+        it("To Json Array", () => {
+
+            const point2D1: Point2D = new Point2D();
+            point2D1.x = 10;
+            point2D1.y = 12;
+
+            const point2D2: Point2D = new Point2D();
+            point2D2.x = 1;
+            point2D2.y = 7;
+
+            const point2D3: Point2D = new Point2D();
+            point2D3.x = 252;
+            point2D3.y = -5;
+
+            const point2DArray: Array<Point2D> = [point2D1, point2D2, point2D3];
+
+            const point2DArrayJson: Array<Json<Point2D>> = serializer.toJson(point2DArray);
+
+            expect(point2DArrayJson).to.deep.equal(
+                [
+                    {
+                        x: 10,
+                        y: 12,
+                        "__enterprize:serializer:metadata": {
+                            versions: [
+                                ["Points.Point2D", 1]
+                            ],
+                            objectMetadata: undefined
+                        }
+                    },
+                    {
+                        x: 1,
+                        y: 7,
+                        "__enterprize:serializer:metadata": {
+                            versions: [
+                                ["Points.Point2D", 1]
+                            ],
+                            objectMetadata: undefined
+                        }
+                    },
+                    {
+                        x: 252,
+                        y: -5,
+                        "__enterprize:serializer:metadata": {
+                            versions: [
+                                ["Points.Point2D", 1]
+                            ],
+                            objectMetadata: undefined
+                        }
+                    }
+                ]
+            );
+        });
+
+        it("From Json Array", () => {
+
+            const point2DArrayJson: Array<Json<Point2D>> = [
+                {
+                    x: 10,
+                    y: 12,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["Points.Point2D", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                {
+                    x: 1,
+                    y: 7,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["Points.Point2D", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                {
+                    x: 252,
+                    y: -5,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["Points.Point2D", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                }
+            ];
+
+            const point2DArrayRestored: Array<Point2D> = serializer.fromJson(point2DArrayJson);
+
+            const point2D1: Point2D = new Point2D();
+            point2D1.x = 10;
+            point2D1.y = 12;
+
+            const point2D2: Point2D = new Point2D();
+            point2D2.x = 1;
+            point2D2.y = 7;
+
+            const point2D3: Point2D = new Point2D();
+            point2D3.x = 252;
+            point2D3.y = -5;
+
+            const point2DArray: Array<Point2D> = [point2D1, point2D2, point2D3];
+
+            expect(point2DArrayRestored instanceof Array).to.true;
+            expect(point2DArrayRestored[0].constructor).to.equal(Point2D);
+            expect(point2DArrayRestored[1].constructor).to.equal(Point2D);
+            expect(point2DArrayRestored[2].constructor).to.equal(Point2D);
+            expect(point2DArrayRestored).to.deep.equal(point2DArray);
+        });
+
         it("To Json - login group", () => {
 
             const elizabeth: Person = new Person();
@@ -491,6 +603,72 @@ describe("Serializer", () => {
 
             expect(aRestored).to.deep.equal(a);
             expect(a.b.a).to.equal(a, "a.b.a is not the same ref as root object a");
+        });
+
+        it("To Json Array Duplicate Objects", () => {
+
+            const point2D: Point2D = new Point2D();
+            point2D.x = 10;
+            point2D.y = 12;
+
+            const point2DArray: Array<Point2D> = [point2D, point2D, point2D];
+
+            const point2DArrayJson: Array<Json<Point2D>> = serializer.toJson(point2DArray);
+
+            expect(point2DArrayJson).to.deep.equal(
+                [
+                    {
+                        x: 10,
+                        y: 12,
+                        "__enterprize:serializer:metadata": {
+                            versions: [
+                                ["Points.Point2D", 1]
+                            ],
+                            objectMetadata: undefined
+                        }
+                    },
+                    {
+                        $ref: "#/0"
+                    },
+                    {
+                        $ref: "#/0"
+                    }
+                ]
+            );
+        });
+
+        it("To From Json Array Duplicate Objects", () => {
+
+            const point2DArrayJson: Array<Json<Point2D>> = [
+                {
+                    x: 10,
+                    y: 12,
+                    "__enterprize:serializer:metadata": {
+                        versions: [
+                            ["Points.Point2D", 1]
+                        ],
+                        objectMetadata: undefined
+                    }
+                },
+                {
+                    $ref: "#/0"
+                },
+                {
+                    $ref: "#/0"
+                }
+            ];
+
+            const point2DRestoredArray: Array<Point2D> = serializer.fromJson(point2DArrayJson);
+
+            const point2D: Point2D = new Point2D();
+            point2D.x = 10;
+            point2D.y = 12;
+
+            const point2DArray: Array<Point2D> = [point2D, point2D, point2D];
+
+            expect(point2DRestoredArray).to.deep.equal(point2DArray);
+            expect(point2DRestoredArray[1]).to.equal(point2DRestoredArray[0]);
+            expect(point2DRestoredArray[2]).to.equal(point2DRestoredArray[0]);
         });
     });
 

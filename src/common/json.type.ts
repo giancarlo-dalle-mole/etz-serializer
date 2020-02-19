@@ -11,7 +11,7 @@ import { JsonMetadata } from "./json-metadata.type";
  * @author Giancarlo Dalle Mole
  * @since 20/01/2020
  */
-export type Json<T> = Object & Metadata & {
+export type Json<T> = (Object & Metadata & {
     [K in PropertiesList<T>]?: T[K] extends Function ? never :
         T[K] extends string|number|boolean|symbol ? T[K] :
         T[K] extends Date ? string :
@@ -21,8 +21,10 @@ export type Json<T> = Object & Metadata & {
             R extends Date ? string :
             Array<Json<R>> :
         Json<T[K]>
-};
+}) | JsonPointer;
 
 type PropertiesList<T> = {[K in keyof T]?: T[K] extends Function ? never : K}[keyof T];
 
 type Metadata = {"__enterprize:serializer:metadata"?: JsonMetadata};
+
+type JsonPointer = Object & {$ref: string};

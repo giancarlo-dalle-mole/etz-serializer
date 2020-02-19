@@ -3,7 +3,10 @@ import {
     RegisteredTransformerInfo, RegisteredTypesMap, SerializableField, SerializableFieldMetadata,
     SerializableMetadata, SerializableOptions, TransformerOptions
 } from "../common";
-import { NoTransformerDefinedException, TransformerAlreadyDefinedException } from "../exceptions";
+import {
+    NoTransformerDefinedException, TransformerAlreadyDefinedException, TypeNotRegisteredException,
+    VersionMismatchException
+} from "../exceptions";
 
 /**
  * (static class) Holds information for all registered types marked with {@link #Serializable @Serializable}
@@ -131,8 +134,9 @@ export class SerializerRegistry {
         let pointer: number = 0;
         while (pointer < namespaceSplit.length) {
 
-            if (namespace.has(namespaceSplit[pointer])) {
-                namespace = namespace.get(namespaceSplit[pointer]);
+            if ((namespace as RegisteredTypesMap).has(namespaceSplit[pointer])) {
+                namespace = (namespace as RegisteredTypesMap).get(namespaceSplit[pointer]);
+
                 if (!(namespace instanceof Map)) {
                     return namespace as Class;
                 }
@@ -144,7 +148,59 @@ export class SerializerRegistry {
             pointer++;
         }
 
-        throw new Error(); // TODO better exception, type not found
+        throw new TypeNotRegisteredException(fqn);
+    }
+
+    /**
+     * Verify if a given class is registered in the registry as a serializable type.
+     * @param clazz The class to check.
+     * @return True if the class is serializable, false otherwise.
+     *
+     * @throws {@link VersionMismatchException} - When the class is registered, but with a diferent version.
+     */
+    public static hasType(clazz: Class): boolean {
+
+        if (!Reflect.hasOwnMetadata(metadataKeys.serializable, clazz)) {
+            return false;
+        }
+
+        const serializableMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, clazz);
+        const namespaceSplit: Array<string> = serializableMetadata.namespace.split(".");
+
+        let namespace: RegisteredTypesMap|Class = this.namespacesRegistry;
+        let registeredClazz: Class;
+
+        let pointer: number = 0;
+        while (pointer < namespaceSplit.length) {
+
+            if ((namespace as RegisteredTypesMap).has(namespaceSplit[pointer])) {
+                namespace = (namespace as RegisteredTypesMap).get(namespaceSplit[pointer]);
+
+                if (!(namespace instanceof Map)) {
+                    registeredClazz = namespace as Class;
+                    break;
+                }
+            }
+            else {
+                break;
+            }
+
+            pointer++;
+        }
+
+        if (registeredClazz == null) {
+            return false;
+        }
+        else {
+
+            const registeredTypeSerializableMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, registeredClazz);
+
+            if (serializableMetadata.version !== registeredTypeSerializableMetadata.version) {
+                throw new VersionMismatchException(undefined, `${serializableMetadata.namespace}.${serializableMetadata.name}`, registeredTypeSerializableMetadata.version, serializableMetadata.version);
+            }
+        }
+
+        return true;
     }
 
     /**

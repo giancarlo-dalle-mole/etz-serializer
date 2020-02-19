@@ -1,5 +1,3 @@
-import { IllegalArgumentException } from "@enterprize/exceptions";
-
 import {
     Class, DeserializationContext, ExtraTypes, ITransformer, SerializationContext
 } from "../common";
@@ -18,6 +16,7 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
     //#region Constructor
     constructor() {
     }
+
     //#endregion
 
     //#region ITransformer Methods
@@ -30,17 +29,14 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
             return json === null ? null : undefined;
         }
 
-        ArrayTransformer.validateExtra(extra);
-
         if (extra == null) {
-
             extra = {
                 itemType: () => TypesEnum.ANY,
                 dimensions: ArrayDimensionsEnum.ONE_DIMENSIONAL
             };
         }
         else {
-            extra.itemType = () => TypesEnum.ANY;
+            extra.itemType = extra.itemType != null ? extra.itemType : () => TypesEnum.ANY;
             extra.dimensions = extra.dimensions != null ? extra.dimensions : ArrayDimensionsEnum.ONE_DIMENSIONAL;
         }
 
@@ -119,27 +115,6 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
         return jsonArray;
     }
     //#endregion
-
-    /**
-     * Validates the "extra" options on {@link SerializeOptions}.
-     * @param extra The extra options to validade/
-     * @returns true if valid, throws exception otherwise.
-     * @throws {@link IllegalArgumentException} - If any of the options are invalid.
-     */
-    public static validateExtra(extra: ArrayExtra): boolean {
-
-        // No extra, defaults will be used.
-        if (extra == null) {
-            return true;
-        }
-
-        // Validates the number of dimensions.
-        if (extra.dimensions != null && !Number.isSafeInteger(extra.dimensions) && extra.dimensions < 0) {
-            throw new IllegalArgumentException("\"dimensions\" must be a safe integer greater or equal than 0 (zero)", "dimensions", {value: extra.dimensions});
-        }
-
-        return true;
-    }
 }
 
 /**
@@ -155,7 +130,7 @@ export type ArrayExtra<E = void> = {
      * (optional) The type of the elements of the array.
      * @default {@link TypesEnum.ANY}
      */
-     itemType?: () => Class|TypesEnum;
+    itemType?: () => Class|TypesEnum;
     /**
      * Extra options to pass to item transformer (if required).
      */
@@ -165,7 +140,7 @@ export type ArrayExtra<E = void> = {
      * value or any natural number (N, integer greater or equal than 0) to customize the number of dimensions.
      * @default {@link ArrayDimensionsEnum.ONE_DIMENSIONAL}
      */
-    dimensions?: ArrayDimensionsEnum|number;
+    dimensions?: ArrayDimensionsEnum | number;
 }
 
 export enum ArrayDimensionsEnum {
