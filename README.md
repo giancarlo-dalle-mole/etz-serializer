@@ -36,9 +36,11 @@ The following features are not supported, but may be added in the future. If you
 ## Development
 
 - NodeJS 12.x LTS
-- TypeScript 3.6.4 
+- TypeScript 3.7.5 
 
 # Usage
+
+See [serializer.spec.ts](src/services/serializer.spec.ts) to see usage while this sections is not written yet :thumbsup:
 
 # Architecture 
 
