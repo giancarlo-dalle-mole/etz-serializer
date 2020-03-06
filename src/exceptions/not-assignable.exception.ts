@@ -4,7 +4,7 @@ import { Exception } from "@enterprize/exceptions";
  * Exception indicating that a given object class cannot be assigned to the expected class.
  *
  * @version 1.0.0
- * @author Giacarlo Dalle Mole
+ * @author Giancarlo Dalle Mole
  * @since 18/02/2020
  */
 export class NotAssignableException extends Exception<NotAssignableExceptionDetails> {

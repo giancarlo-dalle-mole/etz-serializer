@@ -1,6 +1,6 @@
 import { Exception } from "@enterprize/exceptions";
 
-import { Class, ITransformer, NewableClass } from "../common";
+import { ITransformer, NewableClass } from "../common";
 
 /**
  * Exception indicating that a given type/class already have an {@link ITransformer} defined and the

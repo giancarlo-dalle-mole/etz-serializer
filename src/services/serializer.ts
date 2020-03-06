@@ -5,7 +5,7 @@ import {
 import { BehaviorEnum } from "../enums";
 import {
     NotAssignableException,
-    NotSerializableException, TypeMismatchException, UnknownJsonPointerException,
+    NotSerializableException, UnknownJsonPointerException,
     VersionMismatchException
 } from "../exceptions";
 import { DeserializationOptions } from "./deserialization-options.type";
@@ -148,14 +148,8 @@ export class Serializer implements ISerializer {
             context.objectReferenceMap.set(instance, context.pointer);
         }
 
-        // Verify if the type has a transformer
-        if (SerializerRegistry.hasTransformer(objectType as NewableClass)) {
-
-            const transformer: ITransformer<T|Array<T>, S|Array<S>, E> = SerializerRegistry.getTransformer(objectType as NewableClass);
-            return transformer.writeJson(instance, extra, context);
-        }
         // Verify if its a serializable type
-        else if (Reflect.hasOwnMetadata(metadataKeys.serializable, objectType)) {
+        if (SerializerRegistry.hasType(objectType)) {
 
             let currentMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, objectType);
             const metadata: Array<SerializableMetadata> = [currentMetadata];
@@ -195,6 +189,13 @@ export class Serializer implements ISerializer {
             }
 
             return writeJsonResult[0] as S;
+        }
+        // Verify if the type has a transformer or the object is a custom class and will be serialized
+        // as plain object
+        else if (SerializerRegistry.hasTransformer(objectType as NewableClass)) {
+
+            const transformer: ITransformer<T|Array<T>, S|Array<S>, E> = SerializerRegistry.getTransformer(objectType as NewableClass);
+            return transformer.writeJson(instance, extra, context);
         }
         else {
             throw new NotSerializableException(instance);
@@ -259,25 +260,8 @@ export class Serializer implements ISerializer {
         // Flag that identifies if the json has metadata
         const hasMetadata: boolean = jsonConstructor === Object && Reflect.has(json as Object, this.jsonMetadataKey);
 
-        // If the object does not have metadata and, the specified root class or the infered json
-        // constructor has a transformer, use the Transformer
-        if (clazz != null && SerializerRegistry.hasTransformer(clazz as NewableClass) || (!hasMetadata && SerializerRegistry.hasTransformer(jsonConstructor as NewableClass))) {
-
-            let transformer: ITransformer<T|Array<T>, S|Array<S>, E>;
-
-            if (clazz != null) {
-                transformer = SerializerRegistry.getTransformer(clazz as NewableClass);
-            }
-                // This allows number|Number, string|String, boolean|Boolean, symbol and Array to be
-            // deserialized without the need of passing the clazz as transformer.
-            else {
-                transformer = SerializerRegistry.getTransformer(jsonConstructor as NewableClass);
-            }
-
-            return transformer.readJson(json, extra, context);
-        }
         // The object uses Serializable strategy
-        else if (hasMetadata || SerializerRegistry.hasType(clazz)) {
+        if (hasMetadata || (clazz != null && SerializerRegistry.hasType(clazz))) {
 
             const jsonMetadata: JsonMetadata = Reflect.get(json as Object, this.jsonMetadataKey);
             // No versions in the metadata and no specified root class, we don't know the type
@@ -304,6 +288,24 @@ export class Serializer implements ISerializer {
             }
 
             return instance;
+        }
+        // If the the specified root class or the inferred json constructor has a transformer,
+        // use the Transformer
+        else if ((clazz != null && SerializerRegistry.hasTransformer(clazz as NewableClass)) ||
+                 (clazz == null && SerializerRegistry.hasTransformer(jsonConstructor as NewableClass))) {
+
+            let transformer: ITransformer<T|Array<T>, S|Array<S>, E>;
+
+            if (clazz != null) {
+                transformer = SerializerRegistry.getTransformer(clazz as NewableClass);
+            }
+                // This allows number|Number, string|String, boolean|Boolean, symbol and Array to be
+            // deserialized without the need of passing the clazz as transformer.
+            else {
+                transformer = SerializerRegistry.getTransformer(jsonConstructor as NewableClass);
+            }
+
+            return transformer.readJson(json, extra, context);
         }
         // Not serializable
         else {
@@ -394,14 +396,16 @@ export class Serializer implements ISerializer {
         // Use the specified root class
         else {
 
+            let serializableClazz: Class = clazz;
             let serializableMetadata: SerializableMetadata;
             // It always should have at least one SerializableMetadata, otherwise it is not a Serializable
             // type
             do {
-                 serializableMetadata = Reflect.getMetadata(metadataKeys.serializable, clazz);
-                 metadata.push(serializableMetadata);
+                 serializableMetadata = Reflect.getMetadata(metadataKeys.serializable, serializableClazz);
+                 metadata.unshift(serializableMetadata);
+                 serializableClazz = serializableMetadata.superClazz;
             }
-            while (serializableMetadata.superClazz !== Object);
+            while (serializableClazz !== Object);
         }
 
         return metadata;

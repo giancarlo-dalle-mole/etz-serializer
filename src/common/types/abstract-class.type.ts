@@ -1,6 +1,6 @@
 /**
- * Type alias for a class definition. Accepts only abstract classes (non constructable classes,
- * abstract classes).
+ * Type alias for a abstract class definition. Accepts only abstract classes (non constructable
+ * classes, abstract classes).
  *
  * ###
  * ### Generic Types

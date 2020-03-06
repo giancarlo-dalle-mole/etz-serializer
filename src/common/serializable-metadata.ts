@@ -1,4 +1,4 @@
-import { Class } from "./class.type";
+import { Class } from "./types";
 import { SerializableFieldMetadata } from "./serializable-field-metadata";
 
 /**
@@ -26,7 +26,7 @@ export class SerializableMetadata {
      */
     public readonly name: string;
     /**
-     * The version of the class to prevent version mismatch erros.
+     * The version of the class to prevent version mismatch errors.
      */
     public readonly version: number;
     /**

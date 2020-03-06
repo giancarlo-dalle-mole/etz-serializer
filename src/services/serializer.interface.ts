@@ -157,7 +157,7 @@ export interface ISerializer {
      * @param context (optional) The operation context. Used to identify the context of a root
      *        operation against its root call. Note: If using a context, the options parameter is
      *        ignored and the options are obtained from the context. Set the options on the context
-     *        if you want different options for this specific opertation and its descendents.
+     *        if you want different options for this specific operation and its descendents.
      * @returns A {@link Json} of the object with the required metadata set.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
@@ -178,7 +178,7 @@ export interface ISerializer {
      * @param context (optional) The operation context. Used to identify the context of a root
      *        operation against its root call. Note: If using a context, the options parameter is
      *        ignored and the options are obtained from the context. Set the options on the context
-     *        if you want different options for this specific opertation and its descendents.
+     *        if you want different options for this specific operation and its descendents.
      * @returns A {@link Json} of the object with the required metadata set.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
@@ -202,7 +202,7 @@ export interface ISerializer {
      * @param context (optional) The operation context. Used to identify the context of a root
      *        operation against its root call. Note: If using a context, the options parameter is
      *        ignored and the options are obtained from the context. Set the options on the context
-     *        if you want different options for this specific opertation and its descendents.
+     *        if you want different options for this specific operation and its descendents.
      * @returns The restored object as a ``T`` instance.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data
@@ -225,7 +225,7 @@ export interface ISerializer {
      * @param context (optional) The operation context. Used to identify the context of a root
      *        operation against its root call. Note: If using a context, the options parameter is
      *        ignored and the options are obtained from the context. Set the options on the context
-     *        if you want different options for this specific opertation and its descendents.
+     *        if you want different options for this specific operation and its descendents.
      * @returns The restored object as an ``Array<T>`` instance.
      *
      * @throws {@link ExtraTransformDataRequired} - When some type uses a transformer and extra data

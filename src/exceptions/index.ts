@@ -1,3 +1,4 @@
+export * from "./array-dimensions-out-of-range.exception";
 export * from "./extra-transform-data-required.exception";
 export * from "./invalid-extra-transform-data.exception";
 export * from "./no-transformer-defined.exception";

@@ -1,5 +1,4 @@
-import { NewableClass } from "./newable-class.type";
-import { TransformerOptions } from "./transformer-options.type";
+import { NewableClass, TransformerOptions } from "./types";
 import { ITransformer } from "./transformer.interface";
 
 /**

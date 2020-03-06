@@ -1,5 +1,5 @@
 import { JsonReader, JsonWriter } from "../services";
-import { Json } from "./json.type";
+import { Json } from "./types";
 
 /**
  * Describes method signatures to customize an object serialization/deserialization process for

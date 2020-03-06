@@ -2,6 +2,7 @@ import {
     Class, DeserializationContext, ExtraTypes, ITransformer, SerializationContext
 } from "../common";
 import { TypesEnum } from "../enums";
+import { ArrayDimensionsOutOfRangeException } from "../exceptions";
 
 /**
  * Transformer for {@link Array} objects. Intended to be used as a
@@ -40,33 +41,14 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
             extra.dimensions = extra.dimensions != null ? extra.dimensions : ArrayDimensionsEnum.ONE_DIMENSIONAL;
         }
 
-        if (extra.dimensions != null && extra.dimensions !== ArrayDimensionsEnum.ANY_DIMENSIONAL) {
-
-            //TODO refactor to accept N number of dimensions
-
-            switch (extra.dimensions) {
-                case ArrayDimensionsEnum.ONE_DIMENSIONAL:
-                    if (Array.isArray(json[0])) {
-                        throw new Error("ArrayDimensionsOutOfRange"); // TODO use a custom exception
-                    }
-                    break;
-                case ArrayDimensionsEnum.TWO_DIMENSIONAL:
-                    if (!(Array.isArray(json[0]) && !Array.isArray(json[0][0]))) {
-                        throw new Error("ArrayDimensionsOutOfRange");
-                    }
-                    break;
-                case ArrayDimensionsEnum.THREE_DIMENSIONAL:
-                    if (!(Array.isArray(json[0]) && Array.isArray(json[0][0]) &&
-                        !Array.isArray(json[0][0][0]))) {
-                        throw new Error("ArrayDimensionsOutOfRange");
-                    }
-                    break;
-            }
-        }
-
         const array: Array<any> = [];
         let i: number = 0;
         for (let item of json) {
+
+            if (context.deserializationOptions.typeCheck &&
+                extra?.dimensions !== ArrayDimensionsEnum.ANY_DIMENSIONAL) {
+                this.checkDimensions(extra.dimensions, item);
+            }
 
             const childContext: DeserializationContext = context.child(i.toString());
 
@@ -113,6 +95,36 @@ export class ArrayTransformer implements ITransformer<Array<any>, Array<any>, Ar
         }
 
         return jsonArray;
+    }
+    //#endregion
+
+    //#region Private Methods
+    /**
+     * Checks the number of dimensions of a given item.
+     * @param dimensions The number of dimensions.
+     * @param item The item to verify.
+     *
+     * @throws ArrayDimensionsOutOfRangeException - If wrong number of dimensions is detected.
+     */
+    private checkDimensions(dimensions: number, item: any): void {
+
+        let pointer: any = item;
+        for (let dimension: number = 1; dimension <= dimensions; dimension++) {
+
+            // not last dimension, value should be an array and we update pointer
+            if (dimension < dimensions) {
+
+                if (!Array.isArray(pointer)) {
+                    throw new ArrayDimensionsOutOfRangeException(dimensions, item);
+                }
+
+                pointer = pointer[0];
+            }
+            // last dimension, value should not be an array
+            else if (Array.isArray(pointer)) {
+                throw new ArrayDimensionsOutOfRangeException(dimension, item);
+            }
+        }
     }
     //#endregion
 }

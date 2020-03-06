@@ -1,4 +1,4 @@
-import { Class, ITransformer, NewableClass, TransformerOptions } from "../common";
+import { ITransformer, NewableClass, TransformerOptions } from "../common";
 import { SerializerRegistry } from "../services";
 
 /**

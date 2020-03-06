@@ -7,7 +7,7 @@ import { Class } from "../common";
  * given value has an unknown type (not registered as serializable nor having a transformer).
  *
  * @version 1.0.0
- * @author Giacarlo Dalle Mole
+ * @author Giancarlo Dalle Mole
  * @since 24/01/2020
  */
 export class NotSerializableException extends Exception<NotSerializableExceptionDetails> {

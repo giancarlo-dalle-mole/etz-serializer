@@ -1,5 +1,4 @@
-import { SerializationOptions, Serializer } from "../services";
-import { JsonPointerEncoder } from "../services/json-pointer-encoder";
+import { SerializationOptions, Serializer, JsonPointerEncoder } from "../services";
 
 /**
  * A serialization context for a given {@link ISerializer.toJson} method. Every call to

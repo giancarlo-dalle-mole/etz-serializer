@@ -3,7 +3,7 @@
  * circumstances or by programmer design choice.
  *
  * @version 1.0.0
- * @author Giacarlo Dalle Mole
+ * @author Giancarlo Dalle Mole
  * @since 27/01/2020
  */
 export enum BehaviorEnum {

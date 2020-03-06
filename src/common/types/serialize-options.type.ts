@@ -3,6 +3,10 @@ import { ExtraTypes } from "./extra-types.type";
 /**
  * Serialization options for a field marked with {@link #Serialize @Serialize}.
  *
+ * ###
+ * ### Generic Types
+ * - ``E``: (optional) The type of the extra. Default: ``void``
+ *
  * @version 1.0.0
  * @author Giancarlo Dalle Mole
  * @since 24/01/2020
@@ -10,8 +14,7 @@ import { ExtraTypes } from "./extra-types.type";
 export type SerializeOptions<E = void> = {
 
     /**
-     * (optional) A list of serialization groups to include the attribute during
-     * serialization/deserialization.
+     * (optional) A list of serialization groups to include the attribute during serialization/deserialization.
      */
     groups?: Array<string>;
     /**

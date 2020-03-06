@@ -1,5 +1,4 @@
-import { DeserializationContext, ITransformer, SerializationContext } from "../common";
-import { Serializer } from "../services";
+import { DeserializationContext, ITransformer } from "../common";
 
 /**
  * Transformer for string primitives and {@link String} Wrappers. Intended to be used as a

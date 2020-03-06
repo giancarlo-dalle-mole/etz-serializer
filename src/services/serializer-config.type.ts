@@ -31,7 +31,7 @@ export type SerializerConfig = {
     /**
      * (optional) Configure the behavior of class version check upon deserialization. If configured
      * to {@link BehaviorEnum.ERROR}, will throw {@link VersionMismatchException}. The class version
-     * is only checked during deserialization.
+     * is only checked during deserialization. This option is irrelevant with {@link typeMetadata} disabled.
      * @default {@link BehaviorEnum.ERROR}
      */
     versionMismatchBehavior?: BehaviorEnum;

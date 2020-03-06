@@ -65,12 +65,12 @@ This section describes the internal rules and design decisions used in this libr
 
 ## Other Rules
 
-* All types/classes not decorated with [``@Serializable``](#serializable) MUST use a [``@Transformer``](#transformert--any-s--any-e--void) to perform serialization;
-* Global and per operation behavior configuration;
-* To enforce wrappers, you MUST use the enum [``TypesEnum.WRAPPER``](#typesenum) in the ``type`` parameter of [``@Serializable``](#serializable);
-* Possibility to serialize without creating any metadata;
-* Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the [``Serializer#deserialize``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) or [``Serializer#fromJson``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) method;
-* If a wrapper is used (Number, Boolean, String), but it was not enforced by [``TypesEnum.WRAPPER``](#typesenum) enum, then value MUST be serialized/deserialized as a primitive;
+- All types/classes not decorated with [``@Serializable``](#serializable) MUST use a [``@Transformer``](#transformert--any-s--any-e--void) to perform serialization;
+- Global and per operation behavior configuration;
+- To enforce wrappers, you MUST use the extra options of each built-in transformer;
+- Possibility to serialize without creating any metadata;
+- Possibility to deserialize without metadata. Requires the ``expectedType`` argument on the [``Serializer#deserialize``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) or [``Serializer#fromJson``](#-public-fromjsont-extends-objectjson-jsont-clazz-classt-options-deserializationoptions-t) method;
+- If a wrapper is used (Number, Boolean, String), but it was not enforced by [``TypesEnum.WRAPPER``](#typesenum) enum, then value MUST be serialized/deserialized as a primitive;
 
 ## Serialization/Deserialization Process
 
@@ -88,9 +88,9 @@ class B extends A {
 }
 ```
 
-In this example, all the fields on the class ``A`` marked to serialization will be serialized with the default strategy first, then if the class implements the [``ISerializable``](#iserializable) interface, the method ``writeJson`` will be called with the generated json. After ``A`` has its fields serialized, the [``Serializer``](#serializer) will move down the hierarchy, serializing ``B`` with the same strategy as ``A``.
+In this example, all the fields on the class ``A`` marked to serialization will be serialized with the default strategy or, if the class implements the [``ISerializable``](#iserializable) interface, the method ``writeJson`` will be called with a [JsonWriter](#jsonwritert-extends-object-extends-abstractjsonprocessort) service allowing the programmer to customize the process. After ``A`` has its fields serialized, the [``Serializer``](#serializer) will move down the hierarchy, serializing ``B`` with the same strategy as ``A``.
 
-Note: inside ``writeJson`` method you MUST use ``this`` to reference the object being serialized. Also, if the class inherits other serializable classes, the json will contain the serialized fields declared on those classes. 
+Note: inside ``writeJson`` method you MUST use ``this`` to reference the object being serialized. Also, if the class inherits other serializable classes, the ``JsonWriter.json`` getter will contain the serialized fields declared on those classes.
 
 ### Deserialization
 
@@ -106,81 +106,11 @@ class B extends A {
 }
 ```
 
-In this example, a ``B`` instance will be created first, but the deserialization of the fields will begin from the ``A`` class with the default strategy, then if the class implements the [``ISerializable``](#iserializable) interface, the method ``readJson`` will be called with the raw json. After ``A`` has its fields deserialized, the [``Serializer``](#serializer) will move down the hierarchy, deserializing ``B`` fields with the same strategy as ``A``.
+In this example, a ``B`` instance will be created first, but the deserialization of the fields will begin from the ``A`` class with the default strategy or, if the class implements the [``ISerializable``](#iserializable) interface, the method ``readJson`` will be called with a [JsonReader](#jsonreadert-extends-object-extends-abstractjsonprocessort) service allowing the programmer to customize the process. After ``A`` has its fields deserialized, the [``Serializer``](#serializer) will move down the hierarchy, deserializing ``B`` fields with the same strategy as ``A``.
 
 Note: inside ``readJson`` method you MUST use ``this`` to reference the object being deserialized. Also, if the class inherits other serializable classes, all the classes up on the hierarchy will be already deserialized and their fields MAY be safely used.
 
-# Public API
-
-## Enums
-
-### ``TypesEnum``
-
-Used to define a type to a [``@Serialize``](#serializee--void) attribute that cannot be expressed naturally in runtime, such as ``any`` type and wrapper enforcement. 
-
-Known usages: [``@Serialize``](#serializee--void)
-
-|Value|Description|
-|---|---|
-|``ANY``|Accepts any type. Use when you do not want to type check.|
-|``WRAPPER``|The type is a wrapper instead of the primitive. Use to define wrapper types.|
-
-### ``BehaviorEnum``
-
-Used to customize behavior on some operations that MAY have different behaviors under certain circumstances or by programmer design choice.  
-
-Known usages: [``SerializerConfig``](#serializer)
-
-|Value|Description|
-|---|---|
-|``WARNING``|Writes a warning on the console when a given situation happens.|
-|``ERROR``|Throws an error when a given situation happens. You MAY want to try-catch theses exceptions.|
-|``IGNORE``|Do nothing when a given situation happens.|
-
-### ``InstatiationPolicyEnum``
-
-Used to customize object instantiation policy.
-
-Known usages: [``@Transformer``](#transformert--any-s--any-e--void) [``SerializerConfig``](#serializer)
-
-|Value|Description|
-|---|---|
-|``SINGLETON``|Instantiate only once and then cache.|
-|``TRANSIENT``|Gets a new instance every time the object is required.|
-
-## Types
-
-### ``Class<T extends Object = Object>``
-
-Type alias for a class definition.
-
-Generic types:
-
-- ``T``: The type (class) being represented.
-
-Format: ``new(...args: any[]) => T``
-
-Known usages: [``SerializerRegistry``](#serializerregistry), [``Serializer``](#serializer), [``@Serializable``](#serializable), [``@Serialize``](#serializee--void), [``@Transformer``](#transformert--any-s--any-e--void)
-
-### ``Json<T extends Object>``
-
-Type alias for a json version of a given class. Only attributes are keep, functions are excluded.
-
-Generic types:
-
-- ``T``: The type (class) of the object this JSON structure represents.
-
-Format: ``Partial<Pick<T, { [K in keyof T]: T[K] extends Function ? never : K }[keyof T]>>``
-
-Known usages: [``ISerializable``](#iserializable), [``Serializer``](#serializer)
-
-### ``RegisteredTypesMap``
-
-Type alias for namespace type organization in [``SerializerRegistry``](#serializerregistry).
-
-Format: ``Map<string, Class|RegisteredTypesMap>``
-
-Known usages: [``SerializerRegistry``](#serializerregistry)
+# API
 
 ## Interfaces
 
@@ -443,6 +373,11 @@ Generic types:
 
 ##### # ``public static addTransformer<T = any, S = any>(clazz: Class, transformer: ITransformerStatic<T, S>)``
 
+
+### ``JsonWriter<T extends Object> extends AbstractJsonProcessor<T>``
+
+### ``JsonReader<T extends Object> extends AbstractJsonProcessor<T>``
+
 ### ``ArrayTransformer implements ITransformer<Array<any>, Array<any>``
 
 Default ``Array`` transformer.
@@ -470,6 +405,125 @@ Default ``Set`` transformer.
 ### ``StringTransformer implements ITransformer<String|string, string>``
 
 Default ``String`` transformer.
+
+## Enums
+
+### ``TypesEnum``
+
+Used to define a type to configure a serializable attribute that cannot be expressed naturally in runtime, such as ``any`` type. 
+
+|Value|Description|
+|---|---|
+|``ANY``|Accepts any type. Use when you do not want to type check.|
+
+### ``BehaviorEnum``
+
+Used to customize behavior on some operations that MAY have different behaviors under certain circumstances or by programmer design choice.  
+
+|Value|Description|
+|---|---|
+|``WARNING``|Writes a warning on the console when a given situation happens.|
+|``ERROR``|Throws an error when a given situation happens. You MAY want to try-catch theses exceptions.|
+|``IGNORE``|Do nothing when a given situation happens.|
+
+### ``InstatiationPolicyEnum``
+
+Used to customize object instantiation policy.
+
+|Value|Description|
+|---|---|
+|``SINGLETON``|Instantiate only once and then cache.|
+|``TRANSIENT``|Gets a new instance every time the object is required.|
+
+## Types
+
+### ``AbstractClass<T extends Object = Object> = Function & { prototype: T }``
+
+Type alias for a abstract class definition. Accepts only abstract classes (non constructable classes,  abstract classes).
+
+Generic types:
+
+- ``T``: (optional) The type (class) being represented. Default: ``Object``
+
+### ``Class<T extends Object = Object>``
+
+Type alias for a class definition.
+
+Generic types:
+
+- ``T``: The type (class) being represented.
+
+### ``ExtraTypes``
+
+Type alias for all the extra data that all the built-in transformers accept.
+
+### ``Json<T extends Object>``
+
+Type alias for a json version of a given class. Only the class attributes are keep, methods are excluded. ``Object`` and ``Array`` methods are kept.
+
+Generic types:
+
+- ``T``: The type (class) of the object this JSON structure represents.
+
+### ``JsonMetadata``
+
+Represents serialization metadata to include in the JSON allowing transparent deserialization or correct inheritance deserialization.
+
+|Attributes Summary|Type|Description|
+|---|:---:|---|
+|``versions``|``Array<[string, number]>``|***(optional)*** Array of tuples with fully qualified name (i.e. namespace plus names separated by "." - dots) with the class versions used to serialize the object. The order is from TOP to BOTTOM in the inheritance hierarchy (e.g. [``A``, ``B``, ``C``] in a ``C extends B``, ``B extends A`` inheritance chain).|
+|``objectMetadata``|``Array<[string, any]>``|***(optional)*** Array of tuples of object metadata to restore.|
+
+### ``NewableClass<T extends Object = Object>``
+
+Type alias for a class definition. Accepts only newable classes (i.e. constructable classes, non abstract classes).
+Generic Types
+
+- ``T``: (optional) The type (class) being represented. Default: ``Object``
+
+### ``SerializableField``
+
+Represents the configuration of a serializable field.
+
+Generic Types
+
+- ``C``: ***(optional)*** The class the field belongs to. Default: ``any``
+- ``E``: ***(optional)*** Extra data to be passed to transformers. Default ``void``
+
+|Attributes Summary|Type|Description|
+|---|:---:|---|
+|``name``|``keyof C``|The name of the field.|
+|``type``|``() => Class TypesEnum``|The type of the field. Must be set as an arrow function to prevent TDZ errors.|
+|``groups``|``Array<string>``| ***(optional)*** List of context groups that this field must be included.|
+|``extra``|``E ExtraTypes``|***(optional)*** Extra data to be passed to the transformers.|
+
+### ``SerializableOptions``
+
+Options of a serializable type.
+
+|Attributes Summary|Type|Description|
+|---|:---:|---|
+|``name``|``string``|***(optional)*** Name of the type. MAY be used to define a custom name. **Default:** ``constructor.name`` (class name).|
+|``namespace``|``string``|***(optional)*** Namespace of the type. MAY be used to group related types. **Default:** ``"global"``.|
+|``version``|``number``|***(optional)*** Define the current version of the type (integer). MAY be used as a version control to prevent bugs of incompatible versions (i.e. client version != server version). **Default:** ``1``.|
+
+### ``SerializeOptions<E = void>``
+
+Serialization options for a field marked with [``@Serialize``](#serializee--void).
+
+|Attributes Summary|Type|Description|
+|---|:---:|---|
+|``groups``|``Array<string>``|***(optional)*** A list of serialization groups to include the attribute during serialization/deserialization.|
+|``extra``|``E ExtraTypes``|***(optional)*** Some extra data to be passed to the Transformer during serialization/deserialization. An example of usage is for ``Array`` on the [``ArrayTransformer``](#arraytransformer-implements-itransformerarrayany-arrayany) (``ArrayExtra``).|
+
+### ``TransformerOptions``
+
+Options to configure a [``ITransformer``](#itransformert--any-s--any-e--voi).
+
+|Attributes Summary|Type|Description|
+|---|:---:|---|
+|``instantiationPolicy``|[``InstantiationPolicyEnum``](#instatiationpolicyenum)|***(optional)*** The specific policy of this transformer instantiation. Overrides global policy in SerializerConfig. **Default:** ``InstantiationPolicyEnum.SINGLETON``|
+|``override``|``boolean``|***(optional)*** Flag to allow an existing type transformer to be overridden, otherwise an [``TransformerAlreadyDefinedException``](#transformeralreadydefinedexception-extends-exceptiontransformeralreadydefinedexceptiondetails) is thrown when trying to override an existing [``ITransformer``](#itransformert--any-s--any-e--voi) definition for a given type. **Default:** ``false``.|
 
 ## Exceptions
 

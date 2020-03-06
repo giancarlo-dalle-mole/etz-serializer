@@ -1,4 +1,4 @@
-import { InstantiationPolicyEnum } from "./common";
+import { InstantiationPolicyEnum } from "./enums";
 import { SerializerRegistry } from "./services";
 import {
     ArrayTransformer, BooleanTransformer, DateTransformer, MapTransformer, NumberTransformer,

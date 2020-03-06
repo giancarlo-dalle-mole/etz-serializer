@@ -1,4 +1,4 @@
-import { TypesEnum } from "../enums";
+import { TypesEnum } from "../../enums";
 import { Class } from "./class.type";
 import { ExtraTypes } from "./extra-types.type";
 
@@ -9,7 +9,7 @@ import { ExtraTypes } from "./extra-types.type";
  * ### Generic Types
  *
  * - ``C``: (optional) The class the field belongs to. Default: ``any``
- * - ``E``: (optional Extra data to be passed to transformers. Default ``void``
+ * - ``E``: (optional) Extra data to be passed to transformers. Default ``void``
  *
  * @version 1.0.0
  */
@@ -34,11 +34,11 @@ export type SerializableField<C = any, E = void> = {
      */
     type: () => Class|TypesEnum;
     /**
-     * List of context groups that this field must be included.
+     * (optional) List of context groups that this field must be included.
      */
     groups?: Array<string>;
     /**
-     * Extra data to be passed to the transformers.
+     * (optional) Extra data to be passed to the transformers.
      */
-    extra?: E|ExtraTypes
+    extra?: E|ExtraTypes;
 }

@@ -1,5 +1,5 @@
 import { Exception } from "@enterprize/exceptions";
-import { Class, Json } from "../common";
+import { Json } from "../common";
 
 /**
  * Exception indicating that during a deserialization a given JSON was serialized with a different

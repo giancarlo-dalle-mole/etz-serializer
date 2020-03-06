@@ -1,5 +1,5 @@
 import { TypesEnum } from "../enums";
-import { Class } from "./class.type";
+import { Class } from "./types";
 
 /**
  * Metadata of a serializable field. Holds information relative to field serialization such as field

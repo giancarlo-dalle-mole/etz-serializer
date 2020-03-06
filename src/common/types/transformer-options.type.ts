@@ -1,4 +1,4 @@
-import { InstantiationPolicyEnum } from "./instantiation-policy.enum";
+import { InstantiationPolicyEnum } from "../../enums";
 
 /**
  * Options to configure a {@link ITransformer}.

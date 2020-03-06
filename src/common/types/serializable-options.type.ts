@@ -13,12 +13,13 @@ export type SerializableOptions = {
     name?: string;
     /**
      * (optional) Namespace of the type. MAY be used to group related types.
-     *        Default: "" (empty string, global namespace).
+     * @default: "global" (global namespace).
      */
     namespace?: string;
     /**
      * (optional) Define the current version of the type (integer). MAY be used as a version control
-     * to prevent bugs of incompatible versions (i.e. client version != server version). Default: 1
+     * to prevent bugs of incompatible versions (i.e. client version != server version).
+     * @default: 1
      */
     version?: number;
 }

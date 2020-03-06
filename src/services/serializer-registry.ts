@@ -1,11 +1,11 @@
 import {
-    Class, InstantiationPolicyEnum, ITransformer, metadataKeys, NewableClass,
-    RegisteredTransformerInfo, RegisteredTypesMap, SerializableField, SerializableFieldMetadata,
+    Class, ITransformer, metadataKeys, NewableClass,
+    RegisteredTransformerInfo, SerializableField, SerializableFieldMetadata,
     SerializableMetadata, SerializableOptions, TransformerOptions
 } from "../common";
+import { InstantiationPolicyEnum } from "../enums";
 import {
-    NoTransformerDefinedException, TransformerAlreadyDefinedException, TypeNotRegisteredException,
-    VersionMismatchException
+    NoTransformerDefinedException, TransformerAlreadyDefinedException, TypeNotRegisteredException
 } from "../exceptions";
 
 /**
@@ -24,7 +24,7 @@ export class SerializerRegistry {
      * All the registered types organized by namespaces (starting with "" - global namespace) with
      * serializable metadata.
      */
-    private static namespacesRegistry: Map<string, RegisteredTypesMap> = SerializerRegistry.initializeNamespaceRegistry();
+    private static registeredTypes: Map<string, Class> = SerializerRegistry.initializeTypesRegistry();
     /**
      * All registered transformers.
      */
@@ -48,8 +48,8 @@ export class SerializerRegistry {
      * Gets the list of registered serializable types organized by namespaces.
      * @return A {@link Map} of the registered types organized by namespaces.
      */
-    public static getNamespaces(): Map<string, RegisteredTypesMap> {
-        return this.namespacesRegistry;
+    public static getTypes(): Map<string, Class> {
+        return new Map(this.registeredTypes);
     }
 
     /**
@@ -89,34 +89,15 @@ export class SerializerRegistry {
 
         const metadata: SerializableMetadata = new SerializableMetadata(
             clazz,
-            options.namespace != null ? options.namespace : "",
+            options.namespace != null ? options.namespace : "global",
             options.name !=  null ? options.name : clazz.name,
             options.version = options.version != null ? options.version : 1,
             superClass,
             fieldInfos
         );
 
-        const namespaceSplit: Array<string> = metadata.namespace.split(".");
-        let namespace: RegisteredTypesMap = this.namespacesRegistry;
-
-        let pointer: number = 0;
-        while (pointer < namespaceSplit.length) {
-
-            if (!namespace.has(namespaceSplit[pointer])) {
-
-                const newNamespace = new Map<string, Class|RegisteredTypesMap>();
-                namespace.set(namespaceSplit[pointer], newNamespace);
-                namespace = newNamespace;
-            }
-            else {
-                namespace = namespace.get(namespaceSplit[pointer]) as RegisteredTypesMap;
-            }
-
-            pointer++;
-        }
-
         Reflect.defineMetadata(metadataKeys.serializable, metadata, clazz);
-        namespace.set(metadata.name, clazz);
+        this.registeredTypes.set(`${metadata.namespace}.${metadata.name}`, clazz);
     }
 
     /**
@@ -128,27 +109,12 @@ export class SerializerRegistry {
      */
     public static getType(fqn: string): Class {
 
-        const namespaceSplit: Array<string> = fqn.split(".");
-        let namespace: RegisteredTypesMap|Class = this.namespacesRegistry;
-
-        let pointer: number = 0;
-        while (pointer < namespaceSplit.length) {
-
-            if ((namespace as RegisteredTypesMap).has(namespaceSplit[pointer])) {
-                namespace = (namespace as RegisteredTypesMap).get(namespaceSplit[pointer]);
-
-                if (!(namespace instanceof Map)) {
-                    return namespace as Class;
-                }
-            }
-            else {
-                break;
-            }
-
-            pointer++;
+        if (this.registeredTypes.has(fqn)) {
+            return this.registeredTypes.get(fqn);
         }
-
-        throw new TypeNotRegisteredException(fqn);
+        else {
+            throw new TypeNotRegisteredException(fqn);
+        }
     }
 
     /**
@@ -156,7 +122,7 @@ export class SerializerRegistry {
      * @param clazz The class to check.
      * @return True if the class is serializable, false otherwise.
      *
-     * @throws {@link VersionMismatchException} - When the class is registered, but with a diferent version.
+     * @throws {@link VersionMismatchException} - When the class is registered, but with a different version.
      */
     public static hasType(clazz: Class): boolean {
 
@@ -165,42 +131,7 @@ export class SerializerRegistry {
         }
 
         const serializableMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, clazz);
-        const namespaceSplit: Array<string> = serializableMetadata.namespace.split(".");
-
-        let namespace: RegisteredTypesMap|Class = this.namespacesRegistry;
-        let registeredClazz: Class;
-
-        let pointer: number = 0;
-        while (pointer < namespaceSplit.length) {
-
-            if ((namespace as RegisteredTypesMap).has(namespaceSplit[pointer])) {
-                namespace = (namespace as RegisteredTypesMap).get(namespaceSplit[pointer]);
-
-                if (!(namespace instanceof Map)) {
-                    registeredClazz = namespace as Class;
-                    break;
-                }
-            }
-            else {
-                break;
-            }
-
-            pointer++;
-        }
-
-        if (registeredClazz == null) {
-            return false;
-        }
-        else {
-
-            const registeredTypeSerializableMetadata: SerializableMetadata = Reflect.getOwnMetadata(metadataKeys.serializable, registeredClazz);
-
-            if (serializableMetadata.version !== registeredTypeSerializableMetadata.version) {
-                throw new VersionMismatchException(undefined, `${serializableMetadata.namespace}.${serializableMetadata.name}`, registeredTypeSerializableMetadata.version, serializableMetadata.version);
-            }
-        }
-
-        return true;
+        return this.registeredTypes.has(`${serializableMetadata.namespace}.${serializableMetadata.name}`);
     }
 
     /**
@@ -279,7 +210,7 @@ export class SerializerRegistry {
             );
         }
 
-        // We clean the singleton transformers cache for the type, so if the transformer is overriden
+        // We clean the singleton transformers cache for the type, so if the transformer is overridden
         // during program execution, it should return the correct instance of it.
         if (this.transformersCache.has(clazz)) {
             this.transformersCache.delete(clazz);
@@ -291,10 +222,10 @@ export class SerializerRegistry {
     /**
      * Initializes the serializable types registry.
      */
-    private static initializeNamespaceRegistry(): Map<string, RegisteredTypesMap> {
+    private static initializeTypesRegistry(): Map<string, Class> {
 
         if (!Reflect.hasMetadata(metadataKeys.namespaceRegistry, Reflect)) {
-            Reflect.defineMetadata(metadataKeys.namespaceRegistry, new Map<string, RegisteredTypesMap>([["", new Map<string, Class|RegisteredTypesMap>()]]), Reflect);
+            Reflect.defineMetadata(metadataKeys.namespaceRegistry, new Map<string, Class>(), Reflect);
         }
 
         // We define the registry as a metadata on the Reflect object itself due to some issues, such
